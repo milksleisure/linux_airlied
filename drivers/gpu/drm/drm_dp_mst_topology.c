@@ -631,7 +631,7 @@ static bool drm_dp_sideband_parse_req(struct drm_dp_sideband_msg_rx *raw,
 	}
 }
 
-static int build_dpcd_write(struct drm_dp_sideband_msg_tx *msg, u8 port_num, u32 offset, u8 num_bytes, u8 *bytes)
+static void build_dpcd_write(struct drm_dp_sideband_msg_tx *msg, u8 port_num, u32 offset, u8 num_bytes, u8 *bytes)
 {
 	struct drm_dp_sideband_msg_req_body req;
 
@@ -641,20 +641,17 @@ static int build_dpcd_write(struct drm_dp_sideband_msg_tx *msg, u8 port_num, u32
 	req.u.dpcd_write.num_bytes = num_bytes;
 	req.u.dpcd_write.bytes = bytes;
 	drm_dp_encode_sideband_req(&req, msg);
-
-	return 0;
 }
 
-static int build_link_address(struct drm_dp_sideband_msg_tx *msg)
+static void build_link_address(struct drm_dp_sideband_msg_tx *msg)
 {
 	struct drm_dp_sideband_msg_req_body req;
 
 	req.req_type = DP_LINK_ADDRESS;
 	drm_dp_encode_sideband_req(&req, msg);
-	return 0;
 }
 
-static int build_enum_path_resources(struct drm_dp_sideband_msg_tx *msg, int port_num)
+static void build_enum_path_resources(struct drm_dp_sideband_msg_tx *msg, int port_num)
 {
 	struct drm_dp_sideband_msg_req_body req;
 
@@ -662,10 +659,9 @@ static int build_enum_path_resources(struct drm_dp_sideband_msg_tx *msg, int por
 	req.u.port_num.port_number = port_num;
 	drm_dp_encode_sideband_req(&req, msg);
 	msg->path_msg = true;
-	return 0;
 }
 
-static int build_allocate_payload(struct drm_dp_sideband_msg_tx *msg, int port_num,
+static void build_allocate_payload(struct drm_dp_sideband_msg_tx *msg, int port_num,
 				  u8 vcpi, uint16_t pbn)
 {
 	struct drm_dp_sideband_msg_req_body req;
@@ -676,7 +672,6 @@ static int build_allocate_payload(struct drm_dp_sideband_msg_tx *msg, int port_n
 	req.u.allocate_payload.pbn = pbn;
 	drm_dp_encode_sideband_req(&req, msg);
 	msg->path_msg = true;
-	return 0;
 }
 
 static int drm_dp_mst_assign_payload_id(struct drm_dp_mst_topology_mgr *mgr,
@@ -1472,7 +1467,6 @@ static void drm_dp_queue_down_tx(struct drm_dp_mst_topology_mgr *mgr,
 static void drm_dp_send_link_address(struct drm_dp_mst_topology_mgr *mgr,
 				     struct drm_dp_mst_branch *mstb)
 {
-	int len;
 	struct drm_dp_sideband_msg_tx *txmsg;
 	int ret;
 
@@ -1481,7 +1475,7 @@ static void drm_dp_send_link_address(struct drm_dp_mst_topology_mgr *mgr,
 		return;
 
 	txmsg->dst = mstb;
-	len = build_link_address(txmsg);
+	build_link_address(txmsg);
 
 	mstb->link_address_sent = true;
 	drm_dp_queue_down_tx(mgr, txmsg);
@@ -1523,7 +1517,6 @@ static int drm_dp_send_enum_path_resources(struct drm_dp_mst_topology_mgr *mgr,
 					   struct drm_dp_mst_branch *mstb,
 					   struct drm_dp_mst_port *port)
 {
-	int len;
 	struct drm_dp_sideband_msg_tx *txmsg;
 	int ret;
 
@@ -1532,7 +1525,7 @@ static int drm_dp_send_enum_path_resources(struct drm_dp_mst_topology_mgr *mgr,
 		return -ENOMEM;
 
 	txmsg->dst = mstb;
-	len = build_enum_path_resources(txmsg, port->port_num);
+	build_enum_path_resources(txmsg, port->port_num);
 
 	drm_dp_queue_down_tx(mgr, txmsg);
 
@@ -1560,7 +1553,7 @@ static int drm_dp_payload_send_msg(struct drm_dp_mst_topology_mgr *mgr,
 {
 	struct drm_dp_sideband_msg_tx *txmsg;
 	struct drm_dp_mst_branch *mstb;
-	int len, ret;
+	int ret;
 
 	mstb = drm_dp_get_validated_mstb_ref(mgr, port->parent);
 	if (!mstb)
@@ -1573,9 +1566,8 @@ static int drm_dp_payload_send_msg(struct drm_dp_mst_topology_mgr *mgr,
 	}
 
 	txmsg->dst = mstb;
-	len = build_allocate_payload(txmsg, port->port_num,
-				     id,
-				     pbn);
+	build_allocate_payload(txmsg, port->port_num,
+			       id, pbn);
 
 	drm_dp_queue_down_tx(mgr, txmsg);
 
@@ -1785,7 +1777,6 @@ static int drm_dp_send_dpcd_write(struct drm_dp_mst_topology_mgr *mgr,
 				  struct drm_dp_mst_port *port,
 				  int offset, int size, u8 *bytes)
 {
-	int len;
 	int ret;
 	struct drm_dp_sideband_msg_tx *txmsg;
 	struct drm_dp_mst_branch *mstb;
@@ -1800,7 +1791,7 @@ static int drm_dp_send_dpcd_write(struct drm_dp_mst_topology_mgr *mgr,
 		goto fail_put;
 	}
 
-	len = build_dpcd_write(txmsg, port->port_num, offset, size, bytes);
+	build_dpcd_write(txmsg, port->port_num, offset, size, bytes);
 	txmsg->dst = mstb;
 
 	drm_dp_queue_down_tx(mgr, txmsg);
