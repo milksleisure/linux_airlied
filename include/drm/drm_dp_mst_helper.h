@@ -69,7 +69,7 @@ struct drm_dp_vcpi {
  */
 struct drm_dp_mst_port {
 	struct kref kref;
-
+	bool needs_update;
 	/* if dpcd 1.2 device is on this port - its GUID info */
 	bool guid_valid;
 	u8 guid[16];
