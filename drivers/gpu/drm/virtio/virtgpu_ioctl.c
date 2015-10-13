@@ -130,6 +130,7 @@ static int virtio_gpu_execbuffer(struct drm_device *dev,
 				   exbuf->num_bo_handles * sizeof(uint32_t))) {
 			ret = -EFAULT;
 			drm_free_large(bo_handles);
+			drm_free_large(buflist);
 			return ret;
 		}
 
