@@ -299,8 +299,10 @@ static int virtio_gpu_resource_create_ioctl(struct drm_device *dev, void *data,
 
 		virtio_gpu_cmd_resource_create_3d(vgdev, &rc_3d, NULL);
 		ret = virtio_gpu_object_attach(vgdev, qobj, res_id, &fence);
-		if (ret)
+		if (ret) {
+			ttm_eu_backoff_reservation(&ticket, &validate_list);
 			goto fail_unref;
+		}
 		ttm_eu_fence_buffer_objects(&ticket, &validate_list, &fence->f);
 	}
 
