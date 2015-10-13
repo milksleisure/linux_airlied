@@ -37,7 +37,7 @@
 #include "drm_legacy.h"
 #include "drm_internal.h"
 
-unsigned int drm_debug = 0;	/* bitmask of DRM_UT_x */
+unsigned int drm_debug = DRM_UT_DPCD;	/* bitmask of DRM_UT_x */
 EXPORT_SYMBOL(drm_debug);
 
 MODULE_AUTHOR(CORE_AUTHOR);

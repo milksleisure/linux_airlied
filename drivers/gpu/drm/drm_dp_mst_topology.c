@@ -2191,11 +2191,13 @@ int drm_dp_mst_hpd_irq(struct drm_dp_mst_topology_mgr *mgr, u8 *esi, bool *handl
 
 	if (esi[1] & DP_DOWN_REP_MSG_RDY) {
 		ret = drm_dp_mst_handle_down_rep(mgr);
+DRM_DEBUG_KMS("handle_down: %d\n", ret);
 		*handled = true;
 	}
 
 	if (esi[1] & DP_UP_REQ_MSG_RDY) {
 		ret |= drm_dp_mst_handle_up_req(mgr);
+DRM_DEBUG_KMS("handle_up: %d\n", ret);
 		*handled = true;
 	}
 

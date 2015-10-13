@@ -1019,9 +1019,12 @@ intel_dp_aux_transfer(struct drm_dp_aux *aux, struct drm_dp_aux_msg *msg)
 		break;
 
 	default:
+txsize = rxsize = ~0;
 		ret = -EINVAL;
 		break;
 	}
+
+DRM_DEBUG_KMS("xfer[%x] request=%x, reply=%x, txsize=%lu, rxsize=%lu, ret=%d\n", intel_dp->aux_ch_ctl_reg, msg->request, msg->reply, txsize, rxsize, ret);
 
 	return ret;
 }
@@ -4110,6 +4113,7 @@ intel_dp_get_sink_irq_esi(struct intel_dp *intel_dp, u8 *sink_irq_vector)
 	ret = intel_dp_dpcd_read_wake(&intel_dp->aux,
 					     DP_SINK_COUNT_ESI,
 					     sink_irq_vector, 14);
+DRM_DEBUG_KMS("ret=%d\n", ret);
 	if (ret != 14)
 		return false;
 
@@ -4264,6 +4268,7 @@ go_again:
 					wret = drm_dp_dpcd_write(&intel_dp->aux,
 								 DP_SINK_COUNT_ESI+1,
 								 &esi[1], 3);
+DRM_DEBUG_KMS("wret=%d\n", wret);
 					if (wret == 3) {
 						break;
 					}
