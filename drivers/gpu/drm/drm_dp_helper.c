@@ -161,7 +161,7 @@ EXPORT_SYMBOL(drm_dp_bw_code_to_link_rate);
 
 static ssize_t aux_transfer(struct drm_dp_aux *aux, struct drm_dp_aux_msg *msg)
 {
-	size_t ret;
+	ssize_t ret;
 
 	mutex_lock(&aux->hw_mutex);
 
@@ -182,7 +182,7 @@ static ssize_t aux_transfer(struct drm_dp_aux *aux, struct drm_dp_aux_msg *msg)
 	ret = aux->transfer(aux, msg);
 
 	DRM_DEBUG_DPCD("%s: reply=0x%02x, size=%zu\n", aux->name, msg->reply, ret);
-	if (unlikely(drm_debug & DRM_UT_DPCD)) {
+	if (unlikely(drm_debug & DRM_UT_DPCD) && (ret > 0)) {
 		switch (msg->request & ~DP_AUX_I2C_MOT) {
 		case DP_AUX_NATIVE_READ:
 		case DP_AUX_I2C_READ:
@@ -242,7 +242,6 @@ static int drm_dp_dpcd_access(struct drm_dp_aux *aux, u8 request,
 			return err;
 		}
 
-
 		switch (msg.reply & DP_AUX_NATIVE_REPLY_MASK) {
 		case DP_AUX_NATIVE_REPLY_ACK:
 			if (err < size)
@@ -260,7 +259,7 @@ static int drm_dp_dpcd_access(struct drm_dp_aux *aux, u8 request,
 		}
 	}
 
-	DRM_DEBUG_DPCD("too many retries, giving up\n");
+	DRM_ERROR("DPCD: too many retries, giving up!\n");
 	return -EIO;
 }
 
@@ -642,7 +641,7 @@ static int drm_dp_i2c_do_msg(struct drm_dp_aux *aux, struct drm_dp_aux_msg *msg)
 		}
 	}
 
-	DRM_DEBUG_DPCD("too many retries, giving up\n");
+	DRM_ERROR("I2C: too many retries, giving up\n");
 	return -EREMOTEIO;
 }
 
