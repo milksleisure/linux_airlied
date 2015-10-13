@@ -103,7 +103,6 @@ static int virtio_gpu_execbuffer(struct drm_device *dev,
 	void __user *user_bo_handles = NULL;
 	struct list_head validate_list;
 	struct ttm_validate_buffer *buflist = NULL;
-	struct ttm_validate_buffer cmdbuffer;
 	int i;
 	struct ww_acquire_ctx ticket;
 	void *buf;
@@ -111,7 +110,6 @@ static int virtio_gpu_execbuffer(struct drm_device *dev,
 	if (vgdev->has_virgl_3d == false)
 		return -ENOSYS;
 
-	memset(&cmdbuffer, 0, sizeof(struct ttm_validate_buffer));
 	INIT_LIST_HEAD(&validate_list);
 	if (exbuf->num_bo_handles) {
 
