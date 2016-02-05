@@ -1463,3 +1463,5 @@ bool amdgpu_dm_release_dal_lock(struct amdgpu_display_manager *dm)
 	/* TODO */
 	return true;
 }
+
+
