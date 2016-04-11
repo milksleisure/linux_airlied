@@ -4130,41 +4130,6 @@ bool dc_bios_is_accelerated_mode(struct dc_bios *dcb)
 #endif
 }
 
-/**
- * bios_parser_prepare_scratch_active_and_requested
- *
- * @brief
- *  update VBIOS scratch registers about active and requested displays
- *
- * @param
- *  enum controller_id - controller Id
- *  enum signal_type signal - signal type used on display
- *  const struct connector_device_tag_info * - pointer to display type and
- *  enum Id
- */
-void dc_bios_prepare_scratch_active_and_requested(struct dc_bios *dcb,
-						  enum controller_id controller_id,
-						  enum signal_type signal,
-						  const struct connector_device_tag_info *device_tag)
-{
-	struct bios_parser *bp = BP_FROM_DCB(dcb);
-
-#ifdef CONFIG_DRM_AMD_DAL_VBIOS_PRESENT
-	bp->bios_helper->prepare_scratch_active_and_requested(
-			bp->ctx,
-			&bp->vbios_helper_data,
-			controller_id,
-			signal,
-			device_tag);
-#else
-	dal_logger_write(bp->ctx->logger,
-			LOG_MAJOR_BIOS,
-			LOG_MINOR_BIOS_CMD_TABLE,
-			"%s: VBIOS is not supported", __func__);
-#endif
-}
-
-
 /*
  * get_integrated_info_v8
  *
