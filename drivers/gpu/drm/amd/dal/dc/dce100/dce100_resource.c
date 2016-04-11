@@ -43,7 +43,7 @@
 #include "dce110/dce110_stream_encoder.h"
 #include "dce110/dce110_opp.h"
 #include "dce110/dce110_clock_source.h"
-
+#include "dce100/dce100_hw_sequencer.h"
 #include "dce/dce_10_0_d.h"
 
 #ifndef mmDP_DPHY_INTERNAL_CTRL
@@ -1045,7 +1045,7 @@ bool dce100_construct_resource_pool(
 	}
 
 	/* Create hardware sequencer */
-	if (!dc_construct_hw_sequencer(as, dc))
+	if (!dce100_hw_sequencer_construct(dc))
 		goto stream_enc_create_fail;
 
 	return true;
