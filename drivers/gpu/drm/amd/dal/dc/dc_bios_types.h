@@ -124,24 +124,6 @@ bool dc_bios_is_device_id_supported(struct dc_bios *bios,
 				    struct device_id id);
 bool dc_bios_is_accelerated_mode(struct dc_bios *bios);
 bool dc_bios_is_lid_open(struct dc_bios *bios);
-#if 0 /* unused trap to debugger functions */
-
-bool dc_bios_is_lid_status_changed(struct dc_bios *bios);
-
-enum lcd_scale  dc_bios_get_scratch_lcd_scale(struct dc_bios *bios);
-void dc_bios_get_bios_event_info(struct dc_bios *bios,
-				 struct bios_event_info *info);
-void dc_bios_update_requested_backlight_level(struct dc_bios *bios,
-					      uint32_t backlight_8bit);
-uint32_t dc_bios_get_requested_backlight_level(struct dc_bios *bios);
-void dc_bios_take_backlight_control(struct dc_bios *bios,
-				    bool cntl);
-bool dc_bios_is_active_display(struct dc_bios *bios,
-			       enum signal_type signal,
-			       const struct connector_device_tag_info *device_tag);
-enum controller_id dc_bios_get_embedded_display_controller_id(struct dc_bios *bios);
-uint32_t dc_bios_get_embedded_display_refresh_rate(struct dc_bios *bios);
-#endif
 
 void dc_bios_prepare_scratch_active_and_requested(struct dc_bios *bios,
 						  enum controller_id controller_id,
