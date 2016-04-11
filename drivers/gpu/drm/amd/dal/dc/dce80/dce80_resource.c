@@ -45,7 +45,7 @@
 #include "dce80/dce80_opp.h"
 #include "dce110/dce110_ipp.h"
 #include "dce110/dce110_clock_source.h"
-
+#include "dce80/dce80_hw_sequencer.h"
 #include "dce/dce_8_0_d.h"
 
 /* TODO remove this include */
@@ -989,7 +989,7 @@ bool dce80_construct_resource_pool(
 	}
 
 	/* Create hardware sequencer */
-	if (!dc_construct_hw_sequencer(as, dc))
+	if (!dce80_hw_sequencer_construct(dc))
 		goto stream_enc_create_fail;
 
 	return true;
