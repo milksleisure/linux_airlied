@@ -4130,21 +4130,6 @@ bool dc_bios_is_accelerated_mode(struct dc_bios *dcb)
 #endif
 }
 
-void dc_bios_set_scratch_acc_mode_change(struct dc_bios *dcb)
-{
-	struct bios_parser *bp = BP_FROM_DCB(dcb);
-
-#ifdef CONFIG_DRM_AMD_DAL_VBIOS_PRESENT
-	bp->bios_helper->set_scratch_acc_mode_change(
-			bp->ctx);
-#else
-	dal_logger_write(bp->ctx->logger,
-			LOG_MAJOR_BIOS,
-			LOG_MINOR_BIOS_CMD_TABLE,
-			"%s: VBIOS is not supported", __func__);
-#endif
-}
-
 /**
  * bios_parser_prepare_scratch_active_and_requested
  *

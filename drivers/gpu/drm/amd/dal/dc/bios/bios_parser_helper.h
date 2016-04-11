@@ -55,8 +55,6 @@ struct bios_parser_helper {
 		struct dc_context *ctx);
 	bool (*is_lid_status_changed)(
 		struct dc_context *ctx);
-	void (*set_scratch_acc_mode_change)(
-		struct dc_context *ctx);
 	bool (*is_accelerated_mode)(
 		struct dc_context *ctx);
 	void (*prepare_scratch_active_and_requested)(

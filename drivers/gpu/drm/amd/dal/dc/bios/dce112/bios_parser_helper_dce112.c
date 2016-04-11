@@ -37,29 +37,6 @@
 #include "bif/bif_5_1_d.h"
 
 /**
- * set_scratch_acc_mode_change
- *
- * @brief
- *  set Accelerated Mode in VBIOS scratch register, VBIOS will clean it when
- *  VGA/non-Accelerated mode is set
- *
- * @param
- *  struct dc_context *ctx - [in] DAL context
- */
-static void set_scratch_acc_mode_change(
-	struct dc_context *ctx)
-{
-	uint32_t addr = mmBIOS_SCRATCH_6;
-	uint32_t value = 0;
-
-	value = dm_read_reg(ctx, addr);
-
-	value |= ATOM_S6_ACC_MODE;
-
-	dm_write_reg(ctx, addr, value);
-}
-
-/**
  * get LCD Scale Mode from VBIOS scratch register
  */
 static enum lcd_scale get_scratch_lcd_scale(
@@ -284,7 +261,6 @@ static const struct bios_parser_helper bios_parser_helper_funcs = {
 	.is_lid_open = is_lid_open,
 	.prepare_scratch_active_and_requested =
 			prepare_scratch_active_and_requested,
-	.set_scratch_acc_mode_change = set_scratch_acc_mode_change
 };
 
 /*
