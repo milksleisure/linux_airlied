@@ -123,7 +123,6 @@ enum bp_result dc_bios_get_din_connector_info(struct dc_bios *bios,
 bool dc_bios_is_device_id_supported(struct dc_bios *bios,
 				    struct device_id id);
 bool dc_bios_is_accelerated_mode(struct dc_bios *bios);
-bool dc_bios_is_lid_open(struct dc_bios *bios);
 
 void dc_bios_prepare_scratch_active_and_requested(struct dc_bios *bios,
 						  enum controller_id controller_id,
