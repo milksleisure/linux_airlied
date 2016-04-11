@@ -4578,16 +4578,6 @@ void dc_bios_destroy_integrated_info(struct dc_bios *dcb,
 	}
 }
 
-/******************************************************************************
-
- * Stub-functions */
-bool dc_bios_is_lid_open(
-	struct dc_bios *bios)
-{
-	BREAK_TO_DEBUGGER();
-	return false;
-}
-
 static bool bios_parser_construct(
 	struct bios_parser *bp,
 	struct bp_init_data *init,
