@@ -41,15 +41,12 @@
 struct bios_parser;
 
 struct bios_parser_helper {
-	enum signal_type (*detect_sink)(
-		struct dc_context *ctx,
-		struct graphics_object_id encoder,
-		struct graphics_object_id connector,
-		enum signal_type signal);
-	bool (*is_accelerated_mode)(
-		struct dc_context *ctx);
-	enum lcd_scale (*get_scratch_lcd_scale)(
-		struct dc_context *ctx);
+	enum signal_type (*detect_sink)(struct cgs_device *cgs,
+					struct graphics_object_id encoder,
+					struct graphics_object_id connector,
+					enum signal_type signal);
+	bool (*is_accelerated_mode)(struct cgs_device *cgs);
+	enum lcd_scale (*get_scratch_lcd_scale)(struct cgs_device *cgs);
 };
 
 #endif

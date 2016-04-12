@@ -32,7 +32,7 @@ struct adapter_service;
 struct bios_parser;
 
 struct bp_init_data {
-	struct dc_context *ctx;
+        struct cgs_device *cgs;
 	uint8_t *bios;
 };
 

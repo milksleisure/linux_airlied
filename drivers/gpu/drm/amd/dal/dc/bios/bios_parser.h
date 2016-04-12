@@ -51,8 +51,7 @@ enum spread_spectrum_id {
 };
 
 struct bios_parser {
-	struct dc_context *ctx;
-
+	struct cgs_device *cgs;
 	struct object_info_table object_info_tbl;
 	uint32_t object_info_tbl_offset;
 	ATOM_MASTER_DATA_TABLE *master_data_tbl;

@@ -774,7 +774,7 @@ static bool adapter_service_construct(
 		as->dcb_override = init_data->vbios_override;
 	else {
 		/* Create BIOS parser */
-		init_data->bp_init_data.ctx = init_data->ctx;
+		init_data->bp_init_data.cgs = init_data->ctx->cgs_device;
 
 		as->dcb_internal = dal_bios_parser_create(
 				&init_data->bp_init_data, dce_version);

@@ -178,7 +178,7 @@ static struct adapter_service *create_as(
 	init_data.ctx = dc_ctx;
 
 	/* BIOS parser init data */
-	init_data.bp_init_data.ctx = dc_ctx;
+	init_data.bp_init_data.cgs = dc_ctx->cgs_device;
 	init_data.bp_init_data.bios = init->asic_id.atombios_base_address;
 
 	/* HW init data */

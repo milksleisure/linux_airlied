@@ -147,7 +147,7 @@ void dc_bios_power_up(struct dc_bios *dcb)
 	struct bios_parser *bp = BP_FROM_DCB(dcb);
 
 	if (bp->lcd_scale == LCD_SCALE_UNKNOWN)
-		bp->lcd_scale = bp->bios_helper->get_scratch_lcd_scale(bp->ctx);
+		bp->lcd_scale = bp->bios_helper->get_scratch_lcd_scale(bp->cgs);
 #endif
 }
 
@@ -3063,10 +3063,6 @@ static enum bp_result patch_bios_image_from_ext_display_connection_info(
 			return BP_RESULT_OK;
 		}
 
-		dal_logger_write(bp->ctx->logger,
-				LOG_MAJOR_BIOS,
-				LOG_MINOR_BIOS_CMD_TABLE,
-				"%s: Failed to read Connection Info Table", __func__);
 		return BP_RESULT_UNSUPPORTED;
 	}
 
@@ -3361,12 +3357,7 @@ bool dc_bios_is_accelerated_mode(struct dc_bios *dcb)
 
 #ifdef CONFIG_DRM_AMD_DAL_VBIOS_PRESENT
 	return bp->bios_helper->is_accelerated_mode(
-			bp->ctx);
-#else
-	dal_logger_write(bp->ctx->logger,
-			LOG_MAJOR_BIOS,
-			LOG_MINOR_BIOS_CMD_TABLE,
-			"%s: VBIOS is not supported", __func__);
+			bp->cgs);
 	return false;
 #endif
 }
@@ -3810,7 +3801,7 @@ static bool bios_parser_construct(
 	if (!init->bios)
 		return false;
 
-	bp->ctx = init->ctx;
+	bp->cgs = init->cgs;
 	bp->bios = init->bios;
 	bp->bios_size = bp->bios[BIOS_IMAGE_SIZE_OFFSET] * BIOS_IMAGE_SIZE_UNIT;
 	bp->bios_local_image = NULL;

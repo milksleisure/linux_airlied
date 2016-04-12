@@ -40,12 +40,12 @@
  * get LCD Scale Mode from VBIOS scratch register
  */
 static enum lcd_scale get_scratch_lcd_scale(
-	struct dc_context *ctx)
+	struct cgs_device *cgs)
 {
 	uint32_t addr = mmBIOS_SCRATCH_6;
 	uint32_t value = 0;
 
-	value = dm_read_reg(ctx, addr);
+	value = cgs_read_register(cgs, addr);
 
 	if (value & ATOM_S6_REQ_LCD_EXPANSION_FULL)
 		return LCD_SCALE_FULLPANEL;
@@ -63,16 +63,16 @@ static enum lcd_scale get_scratch_lcd_scale(
  *  VGA/non-Accelerated mode is set
  *
  * @param
- * struct dc_context *ctx
+ * struct cgs_device *cgs
  *
  * @return
  * true if in acceleration mode, false otherwise.
  */
 static bool is_accelerated_mode(
-	struct dc_context *ctx)
+	struct cgs_device *cgs)
 {
 	uint32_t addr = mmBIOS_SCRATCH_6;
-	uint32_t value = dm_read_reg(ctx, addr);
+	uint32_t value = cgs_read_register(cgs, addr);
 
 	return (value & ATOM_S6_ACC_MODE) ? true : false;
 }
@@ -97,7 +97,7 @@ static bool is_accelerated_mode(
  *  signal_type - actual (on the sink) signal type detected
  */
 static enum signal_type detect_sink(
-	struct dc_context *ctx,
+	struct cgs_device *cgs,
 	struct graphics_object_id encoder,
 	struct graphics_object_id connector,
 	enum signal_type signal)
@@ -111,7 +111,7 @@ static enum signal_type detect_sink(
 		return SIGNAL_TYPE_NONE;
 	}
 
-	bios_scratch0 = dm_read_reg(ctx,
+	bios_scratch0 = cgs_read_register(cgs,
 		mmBIOS_SCRATCH_0 + ATOM_DEVICE_CONNECT_INFO_DEF);
 
 	/* In further processing we use DACB masks. If we want detect load on
