@@ -222,11 +222,6 @@ struct graphics_object_encoder_cap_info {
 	uint32_t reserved:15;
 };
 
-struct din_connector_info {
-	uint32_t gpio_id;
-	bool gpio_tv_active_state;
-};
-
 /* Invalid channel mapping */
 enum { INVALID_DDI_CHANNEL_MAPPING = 0x0 };
 

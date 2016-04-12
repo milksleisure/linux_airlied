@@ -73,8 +73,6 @@ static enum generic_id generic_id_from_bios_object_id(uint32_t bios_object_id);
 static void get_atom_data_table_revision(
 	ATOM_COMMON_TABLE_HEADER *atom_data_tbl,
 	struct atom_data_revision *tbl_revision);
-static uint32_t get_dst_number_from_object(struct bios_parser *bp,
-	ATOM_OBJECT *object);
 static uint32_t get_src_obj_list(struct bios_parser *bp, ATOM_OBJECT *object,
 	uint16_t **id_list);
 static uint32_t get_dest_obj_list(struct bios_parser *bp,
@@ -167,44 +165,12 @@ static uint8_t get_number_of_objects(struct bios_parser *bp, uint32_t offset)
 		return table->ucNumberOfObjects;
 }
 
-uint8_t dc_bios_get_encoders_number(struct dc_bios *dcb)
-{
-	struct bios_parser *bp = BP_FROM_DCB(dcb);
-
-	return get_number_of_objects(bp,
-		le16_to_cpu(bp->object_info_tbl.v1_1->usEncoderObjectTableOffset));
-}
-
 uint8_t dc_bios_get_connectors_number(struct dc_bios *dcb)
 {
 	struct bios_parser *bp = BP_FROM_DCB(dcb);
 
 	return get_number_of_objects(bp,
 		le16_to_cpu(bp->object_info_tbl.v1_1->usConnectorObjectTableOffset));
-}
-
-uint32_t dc_bios_get_oem_ddc_lines_number(struct dc_bios *dcb)
-{
-	uint32_t number = 0;
-	struct bios_parser *bp = BP_FROM_DCB(dcb);
-
-	if (DATA_TABLES(OemInfo) != 0) {
-		ATOM_OEM_INFO *info;
-
-		info = GET_IMAGE(ATOM_OEM_INFO,
-			DATA_TABLES(OemInfo));
-
-		if (le16_to_cpu(info->sHeader.usStructureSize)
-			> sizeof(ATOM_COMMON_TABLE_HEADER)) {
-
-			number = (le16_to_cpu(info->sHeader.usStructureSize)
-				- sizeof(ATOM_COMMON_TABLE_HEADER))
-				/ sizeof(ATOM_I2C_ID_CONFIG_ACCESS);
-
-		}
-	}
-
-	return number;
 }
 
 struct graphics_object_id dc_bios_get_encoder_id(struct dc_bios *dcb,
@@ -251,15 +217,6 @@ struct graphics_object_id dc_bios_get_connector_id(struct dc_bios *dcb,
 	return object_id;
 }
 
-uint32_t dc_bios_get_dst_number(struct dc_bios *dcb,
-				struct graphics_object_id id)
-{
-	struct bios_parser *bp = BP_FROM_DCB(dcb);
-	ATOM_OBJECT *object = get_bios_object(bp, id);
-
-	return get_dst_number_from_object(bp, object);
-}
-
 enum bp_result dc_bios_get_src_obj(struct dc_bios *dcb,
 				   struct graphics_object_id object_id,
 				   uint32_t index,
@@ -288,68 +245,6 @@ enum bp_result dc_bios_get_src_obj(struct dc_bios *dcb,
 	*src_object_id = object_id_from_bios_object_id(id[index]);
 
 	return BP_RESULT_OK;
-}
-
-enum bp_result dc_bios_get_dst_obj(struct dc_bios *dcb,
-				   struct graphics_object_id object_id,
-				   uint32_t index,
-				   struct graphics_object_id *dest_object_id)
-{
-	uint32_t number;
-	uint16_t *id;
-	ATOM_OBJECT *object;
-	struct bios_parser *bp = BP_FROM_DCB(dcb);
-
-	if (!dest_object_id)
-		return BP_RESULT_BADINPUT;
-
-	object = get_bios_object(bp, object_id);
-
-	number = get_dest_obj_list(bp, object, &id);
-
-	if (number <= index)
-		return BP_RESULT_BADINPUT;
-
-	*dest_object_id = object_id_from_bios_object_id(id[index]);
-
-	return BP_RESULT_OK;
-}
-
-enum bp_result dc_bios_get_oem_ddc_info(struct dc_bios *dcb,
-					uint32_t index,
-					struct graphics_object_i2c_info *info)
-{
-	struct bios_parser *bp = BP_FROM_DCB(dcb);
-
-	if (!info)
-		return BP_RESULT_BADINPUT;
-
-	if (DATA_TABLES(OemInfo) != 0) {
-		ATOM_OEM_INFO *tbl;
-
-		tbl = GET_IMAGE(ATOM_OEM_INFO, DATA_TABLES(OemInfo));
-
-		if (le16_to_cpu(tbl->sHeader.usStructureSize)
-			> sizeof(ATOM_COMMON_TABLE_HEADER)) {
-			ATOM_I2C_RECORD record;
-			ATOM_I2C_ID_CONFIG_ACCESS *config;
-
-			memset(&record, 0, sizeof(record));
-
-			config = &tbl->sucI2cId + index - 1;
-
-			record.sucI2cId.bfHW_Capable =
-				config->sbfAccess.bfHW_Capable;
-			record.sucI2cId.bfI2C_LineMux =
-				config->sbfAccess.bfI2C_LineMux;
-			record.sucI2cId.bfHW_EngineID =
-				config->sbfAccess.bfHW_EngineID;
-
-			return get_gpio_i2c_info(bp, &record, info);
-		}
-	}
-
-	return BP_RESULT_NORECORD;
 }
 
 enum bp_result dc_bios_get_i2c_info(struct dc_bios *dcb,
@@ -396,129 +291,6 @@ enum bp_result dc_bios_get_i2c_info(struct dc_bios *dcb,
 	}
 
 	return BP_RESULT_NORECORD;
-}
-
-static enum bp_result get_voltage_ddc_info_v1(uint8_t *i2c_line,
-	ATOM_COMMON_TABLE_HEADER *header,
-	uint8_t *address)
-{
-	enum bp_result result = BP_RESULT_NORECORD;
-	ATOM_VOLTAGE_OBJECT_INFO *info =
-		(ATOM_VOLTAGE_OBJECT_INFO *) address;
-
-	uint8_t *voltage_current_object = (uint8_t *) &info->asVoltageObj[0];
-
-	while ((address + le16_to_cpu(header->usStructureSize)) > voltage_current_object) {
-		ATOM_VOLTAGE_OBJECT *object =
-			(ATOM_VOLTAGE_OBJECT *) voltage_current_object;
-
-		if ((object->ucVoltageType == SET_VOLTAGE_INIT_MODE) &&
-			(object->ucVoltageType &
-				VOLTAGE_CONTROLLED_BY_I2C_MASK)) {
-
-			*i2c_line = object->asControl.ucVoltageControlI2cLine
-					^ 0x90;
-			result = BP_RESULT_OK;
-			break;
-		}
-
-		voltage_current_object += object->ucSize;
-	}
-	return result;
-}
-
-static enum bp_result get_voltage_ddc_info_v3(uint8_t *i2c_line,
-	uint32_t index,
-	ATOM_COMMON_TABLE_HEADER *header,
-	uint8_t *address)
-{
-	enum bp_result result = BP_RESULT_NORECORD;
-	ATOM_VOLTAGE_OBJECT_INFO_V3_1 *info =
-		(ATOM_VOLTAGE_OBJECT_INFO_V3_1 *) address;
-
-	uint8_t *voltage_current_object =
-		(uint8_t *) (&(info->asVoltageObj[0]));
-
-	while ((address + le16_to_cpu(header->usStructureSize)) > voltage_current_object) {
-		ATOM_I2C_VOLTAGE_OBJECT_V3 *object =
-			(ATOM_I2C_VOLTAGE_OBJECT_V3 *) voltage_current_object;
-
-		if (object->sHeader.ucVoltageMode ==
-			ATOM_INIT_VOLTAGE_REGULATOR) {
-			if (object->sHeader.ucVoltageType == index) {
-				*i2c_line = object->ucVoltageControlI2cLine
-						^ 0x90;
-				result = BP_RESULT_OK;
-				break;
-			}
-		}
-
-		voltage_current_object += le16_to_cpu(object->sHeader.usSize);
-	}
-	return result;
-}
-
-enum bp_result dc_bios_get_thermal_ddc_info(struct dc_bios *dcb,
-					    uint32_t i2c_channel_id,
-					    struct graphics_object_i2c_info *info)
-{
-	struct bios_parser *bp = BP_FROM_DCB(dcb);
-	ATOM_I2C_ID_CONFIG_ACCESS *config;
-	ATOM_I2C_RECORD record;
-
-	if (!info)
-		return BP_RESULT_BADINPUT;
-
-	config = (ATOM_I2C_ID_CONFIG_ACCESS *) &i2c_channel_id;
-
-	record.sucI2cId.bfHW_Capable = config->sbfAccess.bfHW_Capable;
-	record.sucI2cId.bfI2C_LineMux = config->sbfAccess.bfI2C_LineMux;
-	record.sucI2cId.bfHW_EngineID = config->sbfAccess.bfHW_EngineID;
-
-	return get_gpio_i2c_info(bp, &record, info);
-}
-
-enum bp_result dc_bios_get_voltage_ddc_info(struct dc_bios *dcb,
-					    uint32_t index,
-					    struct graphics_object_i2c_info *info)
-{
-	uint8_t i2c_line = 0;
-	enum bp_result result = BP_RESULT_NORECORD;
-	uint8_t *voltage_info_address;
-	ATOM_COMMON_TABLE_HEADER *header;
-	struct atom_data_revision revision = {0};
-	struct bios_parser *bp = BP_FROM_DCB(dcb);
-
-	if (!DATA_TABLES(VoltageObjectInfo))
-		return result;
-
-	voltage_info_address = get_image(bp,
-		DATA_TABLES(VoltageObjectInfo),
-		sizeof(ATOM_COMMON_TABLE_HEADER));
-
-	header = (ATOM_COMMON_TABLE_HEADER *) voltage_info_address;
-
-	get_atom_data_table_revision(header, &revision);
-
-	switch (revision.major) {
-	case 1:
-	case 2:
-		result = get_voltage_ddc_info_v1(&i2c_line, header,
-			voltage_info_address);
-		break;
-	case 3:
-		if (revision.minor != 1)
-			break;
-		result = get_voltage_ddc_info_v3(&i2c_line, index, header,
-			voltage_info_address);
-		break;
-	}
-
-	if (result == BP_RESULT_OK)
-		result = dc_bios_get_thermal_ddc_info(dcb,
-						      i2c_line, info);
-
-	return result;
 }
 
 enum bp_result bios_parser_get_ddc_info_for_i2c_line(struct bios_parser *bp,
@@ -610,79 +382,6 @@ enum bp_result dc_bios_get_hpd_info(struct dc_bios *dcb,
 	}
 
 	return BP_RESULT_NORECORD;
-}
-
-uint32_t dc_bios_get_gpio_record(struct dc_bios *dcb,
-				 struct graphics_object_id id,
-				 struct bp_gpio_cntl_info *gpio_record,
-				 uint32_t record_size)
-{
-	struct bios_parser *bp = BP_FROM_DCB(dcb);
-	ATOM_COMMON_RECORD_HEADER *header = NULL;
-	ATOM_OBJECT_GPIO_CNTL_RECORD *record = NULL;
-	ATOM_OBJECT *object = get_bios_object(bp, id);
-	uint32_t offset;
-	uint32_t pins_number;
-	uint32_t i;
-
-	if (!object)
-		return 0;
-
-	/* Initialise offset */
-	offset = le16_to_cpu(object->usRecordOffset)
-			+ bp->object_info_tbl_offset;
-
-	for (;;) {
-		/* Get record header */
-		header = GET_IMAGE(ATOM_COMMON_RECORD_HEADER, offset);
-		if (!header || header->ucRecordType == LAST_RECORD_TYPE ||
-			!header->ucRecordSize)
-			break;
-
-		/* If this is gpio control record - stop. We found the record */
-		if (header->ucRecordType == ATOM_OBJECT_GPIO_CNTL_RECORD_TYPE
-			&& header->ucRecordSize
-				>= sizeof(ATOM_OBJECT_GPIO_CNTL_RECORD)) {
-			record = (ATOM_OBJECT_GPIO_CNTL_RECORD *) header;
-			break;
-		}
-
-		/* Advance to next record */
-		offset += header->ucRecordSize;
-	}
-
-	/* If we did not find a record - return */
-	if (!record)
-		return 0;
-
-	/* Extract gpio IDs from bios record (make sure we do not exceed passed
-	 *  array size) */
-	pins_number = (record->ucNumberOfPins < record_size ?
-			record->ucNumberOfPins : record_size);
-	for (i = 0; i < pins_number; i++) {
-		uint8_t output_state = ((record->asGpio[i].ucGPIO_PinState
-			& GPIO_PIN_OUTPUT_STATE_MASK)
-			>> GPIO_PIN_OUTPUT_STATE_SHIFT);
-		gpio_record[i].id = record->asGpio[i].ucGPIOID;
-
-		switch (output_state) {
-		case GPIO_PIN_STATE_ACTIVE_LOW:
-			gpio_record[i].state =
-				GPIO_PIN_OUTPUT_STATE_ACTIVE_LOW;
-			break;
-
-		case GPIO_PIN_STATE_ACTIVE_HIGH:
-			gpio_record[i].state =
-				GPIO_PIN_OUTPUT_STATE_ACTIVE_HIGH;
-			break;
-
-		default:
-			BREAK_TO_DEBUGGER(); /* Invalid Pin Output State */
-			break;
-		}
-	}
-
-	return pins_number;
 }
 
 enum bp_result bios_parser_get_device_tag_record(
@@ -2113,82 +1812,6 @@ static ATOM_ENCODER_CAP_RECORD *get_encoder_cap_record(
 	return NULL;
 }
 
-/**
- * dc_bios_get_din_connector_info
- * @brief
- *   Get GPIO record for the DIN connector, this GPIO tells whether there is a
- *    CV dumb dongle
- *   attached to the DIN connector to perform load detection for the the
- *    appropriate signal
- *
- * @param id - DIN connector object id
- * @param info             - GPIO record infor
- * @return Bios parser result code
- */
-enum bp_result dc_bios_get_din_connector_info(struct dc_bios *dcb,
-					      struct graphics_object_id id,
-					      struct din_connector_info *info)
-{
-	struct bios_parser *bp = BP_FROM_DCB(dcb);
-	ATOM_COMMON_RECORD_HEADER *header;
-	ATOM_CONNECTOR_CVTV_SHARE_DIN_RECORD *record = NULL;
-	ATOM_OBJECT *object;
-	uint32_t offset;
-	enum bp_result result = BP_RESULT_NORECORD;
-
-	/* no output buffer provided */
-	if (!info) {
-		BREAK_TO_DEBUGGER(); /* Invalid output buffer */
-		return BP_RESULT_BADINPUT;
-	}
-
-	object = get_bios_object(bp, id);
-	if (!object) {
-		BREAK_TO_DEBUGGER(); /* Invalid object id */;
-		return BP_RESULT_BADINPUT;
-	}
-
-	offset = le16_to_cpu(object->usRecordOffset)
-						+ bp->object_info_tbl_offset;
-
-	for (;;) {
-		header = GET_IMAGE(ATOM_COMMON_RECORD_HEADER, offset);
-
-		if (!header) {
-			result = BP_RESULT_BADBIOSTABLE;
-			break;
-		}
-
-		offset += header->ucRecordSize;
-
-		/* get out of the loop if no more records */
-		if (LAST_RECORD_TYPE == header->ucRecordType ||
-				!header->ucRecordSize)
-			break;
-
-		if (ATOM_CONNECTOR_CVTV_SHARE_DIN_RECORD_TYPE !=
-				header->ucRecordType)
-			continue;
-
-		if (sizeof(ATOM_CONNECTOR_CVTV_SHARE_DIN_RECORD)
-				> header->ucRecordSize)
-			continue;
-
-		record = (ATOM_CONNECTOR_CVTV_SHARE_DIN_RECORD *)header;
-		result = BP_RESULT_OK;
-		break;
-	}
-
-	/* return if the record not found */
-	if (result != BP_RESULT_OK)
-		return result;
-
-	info->gpio_id = record->ucGPIOID;
-	info->gpio_tv_active_state = (record->ucTVActiveState != 0);
-
-	return result;
-}
-
 static uint32_t get_ss_entry_number(
 	struct bios_parser *bp,
 	uint32_t id);
@@ -2652,35 +2275,6 @@ static uint32_t get_src_obj_list(struct bios_parser *bp, ATOM_OBJECT *object,
 			*number * sizeof(uint16_t));
 
 	if (!*id_list)
-		return 0;
-
-	return *number;
-}
-
-static uint32_t get_dst_number_from_object(struct bios_parser *bp,
-	ATOM_OBJECT *object)
-{
-	uint32_t offset;
-	uint8_t *number;
-
-	if (!object) {
-		BREAK_TO_DEBUGGER(); /* Invalid encoder object id*/
-		return 0;
-	}
-
-	offset = le16_to_cpu(object->usSrcDstTableOffset)
-					+ bp->object_info_tbl_offset;
-
-	number = GET_IMAGE(uint8_t, offset);
-	if (!number)
-		return 0;
-
-	offset += sizeof(uint8_t);
-	offset += sizeof(uint16_t) * (*number);
-
-	number = GET_IMAGE(uint8_t, offset);
-
-	if (!number)
 		return 0;
 
 	return *number;

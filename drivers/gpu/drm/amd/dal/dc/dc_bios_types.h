@@ -42,42 +42,18 @@ uint8_t dc_bios_get_connectors_number(struct dc_bios *bios);
 
 void dc_bios_power_up(struct dc_bios *bios);
 
-uint8_t dc_bios_get_encoders_number(struct dc_bios *bios);
-uint32_t dc_bios_get_oem_ddc_lines_number(struct dc_bios *bios);
-
 struct graphics_object_id dc_bios_get_encoder_id(struct dc_bios *bios,
 						 uint32_t i);
 struct graphics_object_id dc_bios_get_connector_id(struct dc_bios *bios,
 						   uint8_t connector_index);
-uint32_t dc_bios_get_dst_number(struct dc_bios *bios,
-				struct graphics_object_id id);
-
-uint32_t dc_bios_get_gpio_record(struct dc_bios *dcb,
-				 struct graphics_object_id id,
-				 struct bp_gpio_cntl_info *gpio_record,
-				 uint32_t record_size);
 enum bp_result dc_bios_get_src_obj(struct dc_bios *bios,
 				    struct graphics_object_id object_id,
 				    uint32_t index,
 				    struct graphics_object_id *src_object_id);
-enum bp_result dc_bios_get_dst_obj(struct dc_bios *bios,
-				   struct graphics_object_id object_id,
-				   uint32_t index,
-				   struct graphics_object_id *dest_object_id);
-enum bp_result dc_bios_get_oem_ddc_info(struct dc_bios *bios,
-					uint32_t index,
-					struct graphics_object_i2c_info *info);
 enum bp_result dc_bios_get_i2c_info(struct dc_bios *dcb,
 				    struct graphics_object_id id,
 				    struct graphics_object_i2c_info *info);
 
-enum bp_result dc_bios_get_voltage_ddc_info(struct dc_bios *bios,
-					    uint32_t index,
-					    struct graphics_object_i2c_info *info);
-
-enum bp_result dc_bios_get_thermal_ddc_info(struct dc_bios *bios,
-					    uint32_t i2c_channel_id,
-					    struct graphics_object_i2c_info *info);
 enum bp_result dc_bios_get_hpd_info(struct dc_bios *bios,
 				    struct graphics_object_id id,
 				    struct graphics_object_hpd_info *info);
@@ -105,9 +81,7 @@ enum bp_result dc_bios_get_gpio_pin_info(struct dc_bios *bios,
 enum bp_result dc_bios_get_encoder_cap_info(struct dc_bios *bios,
 					    struct graphics_object_id object_id,
 					    struct bp_encoder_cap_info *info);
-enum bp_result dc_bios_get_din_connector_info(struct dc_bios *bios,
-					      struct graphics_object_id id,
-					      struct din_connector_info *info);
+
 bool dc_bios_is_device_id_supported(struct dc_bios *bios,
 				    struct device_id id);
 bool dc_bios_is_accelerated_mode(struct dc_bios *bios);
