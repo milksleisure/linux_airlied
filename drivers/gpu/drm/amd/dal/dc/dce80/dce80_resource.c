@@ -799,7 +799,7 @@ enum dc_status dce80_validate_with_context(
 	return result;
 }
 
-static struct resource_funcs dce80_res_pool_funcs = {
+static const struct resource_funcs dce80_res_pool_funcs = {
 	.destruct = dce80_destruct_resource_pool,
 	.link_enc_create = dce80_link_encoder_create,
 	.validate_with_context = dce80_validate_with_context,
