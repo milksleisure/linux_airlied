@@ -1570,8 +1570,8 @@ enum bp_result dc_bios_get_spread_spectrum_info(
 			break;
 		}
 		break;
-		default:
-			break;
+	default:
+		break;
 	}
 	/* there can not be more then one entry for SS Info table */
 	return result;
@@ -1802,8 +1802,8 @@ enum bp_result dc_bios_get_embedded_panel_info(
 		default:
 			break;
 		}
-		default:
-			break;
+	default:
+		break;
 	}
 
 	return BP_RESULT_FAILURE;
@@ -2273,8 +2273,8 @@ uint32_t dc_bios_get_ss_entry_number(struct dc_bios *dcb,
 			break;
 		}
 		break;
-		default:
-			break;
+	default:
+		break;
 	}
 
 	return 0;
@@ -3300,52 +3300,52 @@ static uint32_t get_support_mask_for_device_id(struct device_id device_id)
 			break;
 		}
 		break;
-		case DEVICE_TYPE_CRT:
-			switch (enum_id) {
-			case 1:
-				return ATOM_DEVICE_CRT1_SUPPORT;
-			case 2:
-				return ATOM_DEVICE_CRT2_SUPPORT;
-			default:
-				break;
-			}
+	case DEVICE_TYPE_CRT:
+		switch (enum_id) {
+		case 1:
+			return ATOM_DEVICE_CRT1_SUPPORT;
+		case 2:
+			return ATOM_DEVICE_CRT2_SUPPORT;
+		default:
 			break;
-			case DEVICE_TYPE_DFP:
-				switch (enum_id) {
-				case 1:
-					return ATOM_DEVICE_DFP1_SUPPORT;
-				case 2:
-					return ATOM_DEVICE_DFP2_SUPPORT;
-				case 3:
-					return ATOM_DEVICE_DFP3_SUPPORT;
-				case 4:
-					return ATOM_DEVICE_DFP4_SUPPORT;
-				case 5:
-					return ATOM_DEVICE_DFP5_SUPPORT;
-				case 6:
-					return ATOM_DEVICE_DFP6_SUPPORT;
-				default:
-					break;
-				}
-				break;
-				case DEVICE_TYPE_CV:
-					switch (enum_id) {
-					case 1:
-						return ATOM_DEVICE_CV_SUPPORT;
-					default:
-						break;
-					}
-					break;
-					case DEVICE_TYPE_TV:
-						switch (enum_id) {
-						case 1:
-							return ATOM_DEVICE_TV1_SUPPORT;
-						default:
-							break;
-						}
-						break;
-						default:
-							break;
+		}
+		break;
+	case DEVICE_TYPE_DFP:
+		switch (enum_id) {
+		case 1:
+			return ATOM_DEVICE_DFP1_SUPPORT;
+		case 2:
+			return ATOM_DEVICE_DFP2_SUPPORT;
+		case 3:
+			return ATOM_DEVICE_DFP3_SUPPORT;
+		case 4:
+			return ATOM_DEVICE_DFP4_SUPPORT;
+		case 5:
+			return ATOM_DEVICE_DFP5_SUPPORT;
+		case 6:
+			return ATOM_DEVICE_DFP6_SUPPORT;
+		default:
+			break;
+		}
+		break;
+	case DEVICE_TYPE_CV:
+		switch (enum_id) {
+		case 1:
+			return ATOM_DEVICE_CV_SUPPORT;
+		default:
+			break;
+		}
+		break;
+	case DEVICE_TYPE_TV:
+		switch (enum_id) {
+		case 1:
+			return ATOM_DEVICE_TV1_SUPPORT;
+		default:
+			break;
+		}
+		break;
+	default:
+		break;
 	};
 
 	/* Unidentified device ID, return empty support mask. */
@@ -3454,7 +3454,7 @@ static enum bp_result get_ext_display_connection_info(
 	if (config_tbl_present)
 		for (i = 0; i < NUMBER_OF_UCHAR_FOR_GUID; i++) {
 			if (ext_display_connection_info_tbl->ucGuid[i]
-														!= ext_display_connection_guid[i]) {
+			    != ext_display_connection_guid[i]) {
 				config_tbl_present = false;
 				break;
 			}
