@@ -243,23 +243,6 @@ union ddi_channel_mapping {
 	uint8_t raw;
 };
 
-/**
-* Transmitter output configuration description
-*/
-struct transmitter_configuration_info {
-	/* DDI PHY ID for the transmitter */
-	enum transmitter transmitter_phy_id;
-	/* DDI PHY channel mapping reflecting crossbar setting */
-	union ddi_channel_mapping output_channel_mapping;
-};
-
-struct transmitter_configuration {
-	/* Configuration for the primary transmitter */
-	struct transmitter_configuration_info primary_transmitter_config;
-	/* Secondary transmitter configuration for Dual-link DVI */
-	struct transmitter_configuration_info secondary_transmitter_config;
-};
-
 /* These size should be sufficient to store info coming from BIOS */
 #define NUMBER_OF_UCHAR_FOR_GUID 16
 #define MAX_NUMBER_OF_EXT_DISPLAY_PATH 7
@@ -362,27 +345,6 @@ struct integrated_info {
 	uint32_t lvds_bit_depth_control_val;
 };
 
-/**
-* Power source ids.
-*/
-enum power_source {
-	POWER_SOURCE_AC = 0,
-	POWER_SOURCE_DC,
-	POWER_SOURCE_LIMITED_POWER,
-	POWER_SOURCE_LIMITED_POWER_2,
-	POWER_SOURCE_MAX
-};
-
-struct bios_event_info {
-	uint32_t thermal_state;
-	uint32_t backlight_level;
-	enum power_source powerSource;
-	bool has_thermal_state_changed;
-	bool has_power_source_changed;
-	bool has_forced_mode_changed;
-	bool forced_mode;
-	bool backlight_changed;
-};
 
 /* Bitvector and bitfields of possible optimizations
  #IMPORTANT# Keep bitfields match bitvector! */
@@ -400,40 +362,12 @@ enum optimization_feature {
 	OF_SKIP_POWER_DOWN_INACTIVE_ENCODER = 0x80
 };
 
-/* Bitvector and bitfields of performance measurements
- #IMPORTANT# Keep bitfields match bitvector! */
-
-enum {
-	PERF_MEASURE_POWERCODE_OFFSET = 0x0,
-	PERF_MEASURE_POWER_CODE_MASK = 0xFF,
-	PERF_MEASURE_POWER_STATE_OFFSET = 8,
-	PERF_MEASURE_POWER_STATE_MASK = 0x000FF00,
-	PERF_MEASURE_PREV_POWER_STATE_OFFSET = 16,
-	PERF_MEASURE_PREV_POWER_STATE_MASK = 0x00FF0000,
-	PERF_MEASURE_DISPLAY_INDEX_OFFSET = 24,
-	PERF_MEASURE_DISPLAY_INDEX_MASK = 0xFF000000
-};
-
-enum {
-	HDMI_PIXEL_CLOCK_IN_KHZ_297 = 297000,
-	TMDS_PIXEL_CLOCK_IN_KHZ_165 = 165000
-};
-
 /*
  * DFS-bypass flag
  */
 /* Copy of SYS_INFO_GPUCAPS__ENABEL_DFS_BYPASS from atombios.h */
 enum {
 	DFS_BYPASS_ENABLE = 0x10
-};
-
-enum {
-	INVALID_BACKLIGHT = -1
-};
-
-struct panel_backlight_boundaries {
-	uint32_t min_signal_level;
-	uint32_t max_signal_level;
 };
 
 
