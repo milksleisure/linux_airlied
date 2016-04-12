@@ -104,9 +104,6 @@ static bool bios_parser_construct(
 	struct bp_init_data *init,
 	enum dce_version dce_version);
 
-enum bp_result dc_bios_get_embedded_panel_info(struct dc_bios *dcb,
-					       struct embedded_panel_info *info);
-
 /*****************************************************************************/
 
 struct dc_bios *dal_bios_parser_create(
