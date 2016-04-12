@@ -52,8 +52,4 @@ struct bios_parser_helper {
 		struct dc_context *ctx);
 };
 
-bool dal_bios_parser_init_bios_helper(
-	struct bios_parser *bp,
-	enum dce_version ver);
-
 #endif
