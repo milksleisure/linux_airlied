@@ -535,7 +535,7 @@ bool amdgpu_atombios_get_connector_info_from_object_table(struct amdgpu_device *
 	return true;
 }
 
-union firmware_info {
+union atombios_firmware_info {
 	ATOM_FIRMWARE_INFO info;
 	ATOM_FIRMWARE_INFO_V1_2 info_12;
 	ATOM_FIRMWARE_INFO_V1_3 info_13;
@@ -558,8 +558,8 @@ int amdgpu_atombios_get_clock_info(struct amdgpu_device *adev)
 		struct amdgpu_pll *ppll = &adev->clock.ppll[0];
 		struct amdgpu_pll *spll = &adev->clock.spll;
 		struct amdgpu_pll *mpll = &adev->clock.mpll;
-		union firmware_info *firmware_info =
-			(union firmware_info *)(mode_info->atom_context->bios +
+		union atombios_firmware_info *firmware_info =
+			(union atombios_firmware_info *)(mode_info->atom_context->bios +
 						data_offset);
 		/* pixel clocks */
 		ppll->reference_freq =
