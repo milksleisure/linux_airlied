@@ -38,25 +38,17 @@
 /* Constructor, Destructor               */
 /*****************************************/
 
-struct opp_funcs funcs = {
+static const struct opp_funcs funcs = {
 		.opp_power_on_regamma_lut = dce110_opp_power_on_regamma_lut_v,
-
 		.opp_program_regamma_pwl = dce110_opp_program_regamma_pwl_v,
-
 		.opp_set_csc_default = dce110_opp_v_set_csc_default,
-
 		.opp_set_csc_adjustment = dce110_opp_v_set_csc_adjustment,
-
 		.opp_program_bit_depth_reduction =
 				dce110_opp_program_bit_depth_reduction,
-
 		.opp_program_clamping_and_pixel_encoding =
 				dce110_opp_program_clamping_and_pixel_encoding,
-
 		.opp_set_dyn_expansion = dce110_opp_set_dyn_expansion,
-
 		.opp_set_regamma_mode = dce110_opp_set_regamma_mode,
-
 		.opp_destroy = dce110_opp_destroy
 };
 

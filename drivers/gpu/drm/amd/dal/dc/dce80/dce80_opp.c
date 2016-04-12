@@ -76,7 +76,7 @@ static const struct dce80_opp_reg_offsets reg_offsets[] = {
 }
 };
 
-static struct opp_funcs funcs = {
+static const struct opp_funcs funcs = {
 		.opp_power_on_regamma_lut = dce80_opp_power_on_regamma_lut,
 		.opp_program_bit_depth_reduction =
 				dce80_opp_program_bit_depth_reduction,
