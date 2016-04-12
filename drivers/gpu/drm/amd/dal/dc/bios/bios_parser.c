@@ -32,7 +32,6 @@
 #include "include/grph_object_ctrl_defs.h"
 #include "include/bios_parser_interface.h"
 #include "include/i2caux_interface.h"
-#include "include/logger_interface.h"
 
 #include "command_table.h"
 #if defined(CONFIG_DRM_AMD_DAL_VBIOS_PRESENT)
@@ -2600,57 +2599,6 @@ static uint32_t get_support_mask_for_device_id(struct device_id device_id)
  *  HwContext interface for writing MM registers
  */
 
-static bool i2c_read(
-	struct adapter_service *as,
-	struct graphics_object_i2c_info *i2c_info,
-	uint8_t *buffer,
-	uint32_t length)
-{
-	struct ddc *ddc;
-	uint8_t offset[2] = { 0, 0 };
-	bool result = false;
-	struct i2c_command cmd;
-
-	ddc = dal_adapter_service_obtain_ddc_from_i2c_info(as, i2c_info);
-
-	if (!ddc)
-		return result;
-
-	/*Using SW engine */
-	cmd.engine = I2C_COMMAND_ENGINE_SW;
-	cmd.speed = dal_adapter_service_get_sw_i2c_speed(as);
-
-	{
-		struct i2c_payload payloads[] = {
-				{
-						.address = i2c_info->i2c_slave_address >> 1,
-						.data = offset,
-						.length = sizeof(offset),
-						.write = true
-				},
-				{
-						.address = i2c_info->i2c_slave_address >> 1,
-						.data = buffer,
-						.length = length,
-						.write = false
-				}
-		};
-
-		cmd.payloads = payloads;
-		cmd.number_of_payloads = ARRAY_SIZE(payloads);
-
-		/* TODO route this through drm i2c_adapter */
-		result = dal_i2caux_submit_i2c_command(
-				dal_adapter_service_get_i2caux(as),
-				ddc,
-				&cmd);
-	}
-
-	dal_adapter_service_release_ddc(as, ddc);
-
-	return result;
-}
-
 /**
  * Read external display connection info table through i2c.
  * validate the GUID and checksum.
@@ -2659,7 +2607,7 @@ static bool i2c_read(
  */
 static enum bp_result get_ext_display_connection_info(
 	struct bios_parser *bp,
-	struct adapter_service *as,
+	void *i2c_ptr, bp_i2c_read_fn i2c_read,
 	ATOM_OBJECT *opm_object,
 	ATOM_EXTERNAL_DISPLAY_CONNECTION_INFO *ext_display_connection_info_tbl)
 {
@@ -2686,7 +2634,7 @@ static enum bp_result get_ext_display_connection_info(
 				BP_RESULT_OK)
 			return BP_RESULT_BADBIOSTABLE;
 
-		if (i2c_read(as,
+		if ((*i2c_read)(i2c_ptr,
 			     &i2c_info,
 			     (uint8_t *)ext_display_connection_info_tbl,
 			     sizeof(ATOM_EXTERNAL_DISPLAY_CONNECTION_INFO))) {
@@ -3007,7 +2955,8 @@ static ATOM_CONNECTOR_HPDPIN_LUT_RECORD *get_ext_connector_hpd_pin_lut_record(
  */
 static enum bp_result patch_bios_image_from_ext_display_connection_info(
 	struct bios_parser *bp,
-	struct adapter_service *as)
+	void *i2c_ptr,
+	bp_i2c_read_fn i2c_read)
 {
 	ATOM_OBJECT_TABLE *connector_tbl;
 	uint32_t connector_tbl_offset;
@@ -3047,7 +2996,7 @@ static enum bp_result patch_bios_image_from_ext_display_connection_info(
 	connector_tbl = GET_IMAGE(ATOM_OBJECT_TABLE, connector_tbl_offset);
 
 	/* Read Connector info table from EEPROM through i2c */
-	if (get_ext_display_connection_info(bp, as,
+	if (get_ext_display_connection_info(bp, i2c_ptr, i2c_read,
 					    opm_object,
 					    &ext_display_connection_info_tbl) != BP_RESULT_OK) {
 		if (bp->headless_no_opm) {
@@ -3254,7 +3203,8 @@ static enum bp_result patch_bios_image_from_ext_display_connection_info(
  */
 
 static void process_ext_display_connection_info(struct bios_parser *bp,
-						struct adapter_service *as)
+						void *i2c_ptr,
+						bp_i2c_read_fn i2c_read)
 {
 	ATOM_OBJECT_TABLE *connector_tbl;
 	uint32_t connector_tbl_offset;
@@ -3309,7 +3259,7 @@ static void process_ext_display_connection_info(struct bios_parser *bp,
 		/* Step 2: (only if MXM connector found) Patch BIOS image with
 		 * info from external module */
 		if (mxm_connector_found &&
-		    patch_bios_image_from_ext_display_connection_info(bp, as) !=
+		    patch_bios_image_from_ext_display_connection_info(bp, i2c_ptr, i2c_read) !=
 						BP_RESULT_OK) {
 			/* Patching the bios image has failed. We will copy
 			 * again original image provided and afterwards
@@ -3344,11 +3294,12 @@ static void process_ext_display_connection_info(struct bios_parser *bp,
 }
 
 void dc_bios_post_init(struct dc_bios *dcb,
-		       struct adapter_service *as)
+		       void *i2c_ptr,
+		       bp_i2c_read_fn i2c_read)
 {
 	struct bios_parser *bp = BP_FROM_DCB(dcb);
 
-	process_ext_display_connection_info(bp, as);
+	process_ext_display_connection_info(bp, i2c_ptr, i2c_read);
 }
 
 bool dc_bios_is_accelerated_mode(struct dc_bios *dcb)

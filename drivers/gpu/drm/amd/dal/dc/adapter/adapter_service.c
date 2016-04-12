@@ -712,6 +712,57 @@ static void adapter_service_destruct(
 	}
 }
 
+static bool i2c_read(void *i2c_ptr,
+		     struct graphics_object_i2c_info *i2c_info,
+		     uint8_t *buffer,
+		     uint32_t length)
+{
+	struct adapter_service *as = i2c_ptr;
+	struct ddc *ddc;
+	uint8_t offset[2] = { 0, 0 };
+	bool result = false;
+	struct i2c_command cmd;
+
+	ddc = dal_adapter_service_obtain_ddc_from_i2c_info(as, i2c_info);
+
+	if (!ddc)
+		return result;
+
+	/*Using SW engine */
+	cmd.engine = I2C_COMMAND_ENGINE_SW;
+	cmd.speed = dal_adapter_service_get_sw_i2c_speed(as);
+
+	{
+		struct i2c_payload payloads[] = {
+				{
+						.address = i2c_info->i2c_slave_address >> 1,
+						.data = offset,
+						.length = sizeof(offset),
+						.write = true
+				},
+				{
+						.address = i2c_info->i2c_slave_address >> 1,
+						.data = buffer,
+						.length = length,
+						.write = false
+				}
+		};
+
+		cmd.payloads = payloads;
+		cmd.number_of_payloads = ARRAY_SIZE(payloads);
+
+		/* TODO route this through drm i2c_adapter */
+		result = dal_i2caux_submit_i2c_command(
+				dal_adapter_service_get_i2caux(as),
+				ddc,
+				&cmd);
+	}
+
+	dal_adapter_service_release_ddc(as, ddc);
+
+	return result;
+}
+
 /*
  * adapter_service_construct
  *
@@ -823,7 +874,7 @@ static bool adapter_service_construct(
 	/* Integrated info is not provided on discrete ASIC. NULL is allowed */
 	as->integrated_info = dc_bios_create_integrated_info(dcb);
 
-	dc_bios_post_init(dcb, as);
+	dc_bios_post_init(dcb, as, i2c_read);
 
 	/* Generate backlight translation table and initializes
 			  other brightness properties */

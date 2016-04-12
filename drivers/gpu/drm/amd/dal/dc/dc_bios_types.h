@@ -114,9 +114,15 @@ enum bp_result dc_bios_enable_disp_power_gating(struct dc_bios *bios,
 						enum controller_id controller_id,
 						enum bp_pipe_control_action action);
 
+typedef bool (*bp_i2c_read_fn)(void *data,
+			       struct graphics_object_i2c_info *i2c_info,
+			       uint8_t *buffer,
+			       uint32_t length);
+
 
 void dc_bios_post_init(struct dc_bios *bios,
-		       struct adapter_service *as);
+		       void *i2c_ptr,
+		       bp_i2c_read_fn read_fn);
 
 struct integrated_info *dc_bios_create_integrated_info(struct dc_bios *bios);
 
