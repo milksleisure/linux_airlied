@@ -49,8 +49,6 @@ struct graphics_object_id dc_bios_get_encoder_id(struct dc_bios *bios,
 						 uint32_t i);
 struct graphics_object_id dc_bios_get_connector_id(struct dc_bios *bios,
 						   uint8_t connector_index);
-uint32_t dc_bios_get_src_number(struct dc_bios *bios,
-				struct graphics_object_id id);
 uint32_t dc_bios_get_dst_number(struct dc_bios *bios,
 				struct graphics_object_id id);
 
@@ -99,20 +97,10 @@ uint32_t dc_bios_get_ss_entry_number(struct dc_bios *bios,
 				     enum as_signal_type signal);
 enum bp_result dc_bios_get_embedded_panel_info(struct dc_bios *bios,
 					       struct embedded_panel_info *info);
-enum bp_result dc_bios_enum_embedded_panel_patch_mode(struct dc_bios *bios,
-						      uint32_t index,
-						      struct embedded_panel_patch_mode *mode);
 
 enum bp_result dc_bios_get_gpio_pin_info(struct dc_bios *bios,
 					 uint32_t gpio_id,
 					 struct gpio_pin_info *info);
-
-enum bp_result dc_bios_get_faked_edid_len(struct dc_bios *bios,
-					  uint32_t *len);
-
-enum bp_result dc_bios_get_faked_edid_buf(struct dc_bios *bios,
-					  uint8_t *buff,
-					  uint32_t len);
 
 enum bp_result dc_bios_get_encoder_cap_info(struct dc_bios *bios,
 					    struct graphics_object_id object_id,
