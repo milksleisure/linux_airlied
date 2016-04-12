@@ -694,7 +694,7 @@ static void display_clock_ss_construct(
 	struct adapter_service *as)
 {
 	uint32_t ss_entry_num = dal_adapter_service_get_ss_info_num(as,
-		AS_SIGNAL_TYPE_GPU_PLL);
+		SS_SIGNAL_TYPE_GPU_PLL);
 
 	/*Read SS Info from VBIOS SS Info table for DP Reference Clock spread.*/
 	if (ss_entry_num > 0) {/* Should be only one entry */
@@ -704,7 +704,7 @@ static void display_clock_ss_construct(
 		memset(&ss_info, 0, sizeof(struct spread_spectrum_info));
 
 		res = dal_adapter_service_get_ss_info(as,
-			AS_SIGNAL_TYPE_GPU_PLL, 0, &ss_info);
+			SS_SIGNAL_TYPE_GPU_PLL, 0, &ss_info);
 
 		/* Based on VBIOS, VBIOS will keep entry for GPU PLL SS even if
 		 * SS not enabled and in that case

@@ -66,11 +66,11 @@ enum bp_result dc_bios_get_firmware_info(struct dc_bios *bios,
 					 struct firmware_info *info);
 
 enum bp_result dc_bios_get_spread_spectrum_info(struct dc_bios *bios,
-						enum as_signal_type signal,
+						enum ss_signal_type signal,
 						uint32_t index,
 						struct spread_spectrum_info *ss_info);
 uint32_t dc_bios_get_ss_entry_number(struct dc_bios *bios,
-				     enum as_signal_type signal);
+				     enum ss_signal_type signal);
 enum bp_result dc_bios_get_embedded_panel_info(struct dc_bios *bios,
 					       struct embedded_panel_info *info);
 

@@ -1287,7 +1287,7 @@ void dal_adapter_service_release_irq(
  */
 uint32_t dal_adapter_service_get_ss_info_num(
 	struct adapter_service *as,
-	enum as_signal_type signal)
+	enum ss_signal_type signal)
 {
 	struct dc_bios *dcb = dal_adapter_service_get_bios_parser(as);
 
@@ -1301,7 +1301,7 @@ uint32_t dal_adapter_service_get_ss_info_num(
  */
 bool dal_adapter_service_get_ss_info(
 	struct adapter_service *as,
-	enum as_signal_type signal,
+	enum ss_signal_type signal,
 	uint32_t idx,
 	struct spread_spectrum_info *info)
 {

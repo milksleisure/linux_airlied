@@ -34,6 +34,7 @@
 #include "adapter_service_types.h"
 #include "dal_types.h"
 #include "asic_capability_types.h"
+#include "signal_types.h"
 
 /* forward declaration */
 struct i2caux;
@@ -359,12 +360,12 @@ struct graphics_object_id dal_adapter_service_get_connector_obj_id(
 /* Get number of spread spectrum entries from BIOS */
 uint32_t dal_adapter_service_get_ss_info_num(
 	struct adapter_service *as,
-	enum as_signal_type signal);
+	enum ss_signal_type signal);
 
 /* Get spread spectrum info from BIOS */
 bool dal_adapter_service_get_ss_info(
 	struct adapter_service *as,
-	enum as_signal_type signal,
+	enum ss_signal_type signal,
 	uint32_t idx,
 	struct spread_spectrum_info *info);
 

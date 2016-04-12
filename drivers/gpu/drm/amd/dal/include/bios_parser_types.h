@@ -31,7 +31,6 @@
 #include "include/signal_types.h"
 #include "include/grph_object_ctrl_defs.h"
 #include "include/gpio_types.h"
-#include "include/adapter_service_types.h" /* for as_signal_type */
 #include "include/link_service_types.h"
 
 enum bp_result {

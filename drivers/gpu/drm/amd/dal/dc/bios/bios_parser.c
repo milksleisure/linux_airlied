@@ -28,10 +28,8 @@
 #include "atom.h"
 
 #include "dc_bios_types.h"
-#include "include/adapter_service_interface.h"
 #include "include/grph_object_ctrl_defs.h"
 #include "include/bios_parser_interface.h"
-#include "include/i2caux_interface.h"
 
 #include "command_table.h"
 #if defined(CONFIG_DRM_AMD_DAL_VBIOS_PRESENT)
@@ -84,7 +82,7 @@ static enum bp_result get_gpio_i2c_info(struct bios_parser *bp,
 static ATOM_HPD_INT_RECORD *get_hpd_record(struct bios_parser *bp,
 	ATOM_OBJECT *object);
 static struct device_id device_type_from_device_id(uint16_t device_id);
-static uint32_t signal_to_ss_id(enum as_signal_type signal);
+static uint32_t signal_to_ss_id(enum ss_signal_type signal);
 static uint32_t get_support_mask_for_device_id(struct device_id device_id);
 static ATOM_ENCODER_CAP_RECORD *get_encoder_cap_record(
 	struct bios_parser *bp,
@@ -1062,7 +1060,7 @@ static enum bp_result get_ss_info_from_tbl(
  */
 enum bp_result dc_bios_get_spread_spectrum_info(
 	struct dc_bios *dcb,
-	enum as_signal_type signal,
+	enum ss_signal_type signal,
 	uint32_t index,
 	struct spread_spectrum_info *ss_info)
 {
@@ -1701,7 +1699,7 @@ static uint32_t get_ss_entry_number_from_ss_info_tbl(
  * @return number of SS Entry that match the signal
  */
 uint32_t dc_bios_get_ss_entry_number(struct dc_bios *dcb,
-				     enum as_signal_type signal)
+				     enum ss_signal_type signal)
 {
 	struct bios_parser *bp = BP_FROM_DCB(dcb);
 	uint32_t ss_id = 0;
@@ -2501,24 +2499,24 @@ static void get_atom_data_table_revision(
 			(uint32_t) GET_DATA_TABLE_MINOR_REVISION(atom_data_tbl);
 }
 
-static uint32_t signal_to_ss_id(enum as_signal_type signal)
+static uint32_t signal_to_ss_id(enum ss_signal_type signal)
 {
 	uint32_t clk_id_ss = 0;
 
 	switch (signal) {
-	case AS_SIGNAL_TYPE_DVI:
+	case SS_SIGNAL_TYPE_DVI:
 		clk_id_ss = ASIC_INTERNAL_SS_ON_TMDS;
 		break;
-	case AS_SIGNAL_TYPE_HDMI:
+	case SS_SIGNAL_TYPE_HDMI:
 		clk_id_ss = ASIC_INTERNAL_SS_ON_HDMI;
 		break;
-	case AS_SIGNAL_TYPE_LVDS:
+	case SS_SIGNAL_TYPE_LVDS:
 		clk_id_ss = ASIC_INTERNAL_SS_ON_LVDS;
 		break;
-	case AS_SIGNAL_TYPE_DISPLAY_PORT:
+	case SS_SIGNAL_TYPE_DISPLAY_PORT:
 		clk_id_ss = ASIC_INTERNAL_SS_ON_DP;
 		break;
-	case AS_SIGNAL_TYPE_GPU_PLL:
+	case SS_SIGNAL_TYPE_GPU_PLL:
 		clk_id_ss = ASIC_INTERNAL_GPUPLL_SS;
 		break;
 	default:

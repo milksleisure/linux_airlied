@@ -901,7 +901,7 @@ static bool dal_display_clock_dce110_construct(
 		uint32_t ss_info_num =
 			dal_adapter_service_get_ss_info_num(
 				as,
-				AS_SIGNAL_TYPE_GPU_PLL);
+				SS_SIGNAL_TYPE_GPU_PLL);
 
 		if (ss_info_num) {
 			struct spread_spectrum_info info;
@@ -912,7 +912,7 @@ static bool dal_display_clock_dce110_construct(
 			result =
 				dal_adapter_service_get_ss_info(
 					as,
-					AS_SIGNAL_TYPE_GPU_PLL,
+					SS_SIGNAL_TYPE_GPU_PLL,
 					0,
 					&info);
 

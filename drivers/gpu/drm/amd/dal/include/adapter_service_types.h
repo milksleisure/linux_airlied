@@ -26,17 +26,6 @@
 #ifndef __DAL_ADAPTER_SERVICE_TYPES_H__
 #define __DAL_ADAPTER_SERVICE_TYPES_H__
 
-/* TODO: include signal_types.h and remove this enum */
-enum as_signal_type {
-	AS_SIGNAL_TYPE_NONE = 0L, /* no signal */
-	AS_SIGNAL_TYPE_DVI,
-	AS_SIGNAL_TYPE_HDMI,
-	AS_SIGNAL_TYPE_LVDS,
-	AS_SIGNAL_TYPE_DISPLAY_PORT,
-	AS_SIGNAL_TYPE_GPU_PLL,
-	AS_SIGNAL_TYPE_UNKNOWN
-};
-
 union audio_support {
 	struct {
 		uint32_t DP_AUDIO:1;

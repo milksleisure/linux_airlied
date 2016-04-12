@@ -823,7 +823,7 @@ static const struct clock_source_funcs dce110_clk_src_funcs = {
 
 static void get_ss_info_from_atombios(
 		struct dce110_clk_src *clk_src,
-		enum as_signal_type as_signal,
+		enum ss_signal_type ss_signal,
 		struct spread_spectrum_data *spread_spectrum_data[],
 		uint32_t *ss_entries_num)
 {
@@ -853,7 +853,7 @@ static void get_ss_info_from_atombios(
 	*ss_entries_num = 0;
 
 	*ss_entries_num = dc_bios_get_ss_entry_number(clk_src->bios,
-						      as_signal);
+						      ss_signal);
 
 	if (*ss_entries_num == 0)
 		return;
@@ -872,7 +872,7 @@ static void get_ss_info_from_atombios(
 		++i, ++ss_info_cur) {
 
 		bp_result = dc_bios_get_spread_spectrum_info(clk_src->bios,
-							     as_signal,
+							     ss_signal,
 							     i,
 							     ss_info_cur);
 		
@@ -894,7 +894,7 @@ static void get_ss_info_from_atombios(
 
 		/* for HDMI check SS percentage,
 		 * if it is > 6 (0.06%), the ATOMBIOS table info is invalid*/
-		if (as_signal == AS_SIGNAL_TYPE_HDMI
+		if (ss_signal == SS_SIGNAL_TYPE_HDMI
 				&& ss_info_cur->spread_spectrum_percentage > 6){
 			/* invalid input, do nothing */
 			dal_logger_write(clk_src->base.ctx->logger,
@@ -951,17 +951,17 @@ static void ss_info_from_atombios_create(
 {
 	get_ss_info_from_atombios(
 		clk_src,
-		AS_SIGNAL_TYPE_DISPLAY_PORT,
+		SS_SIGNAL_TYPE_DISPLAY_PORT,
 		&clk_src->dp_ss_params,
 		&clk_src->dp_ss_params_cnt);
 	get_ss_info_from_atombios(
 		clk_src,
-		AS_SIGNAL_TYPE_HDMI,
+		SS_SIGNAL_TYPE_HDMI,
 		&clk_src->hdmi_ss_params,
 		&clk_src->hdmi_ss_params_cnt);
 	get_ss_info_from_atombios(
 		clk_src,
-		AS_SIGNAL_TYPE_DVI,
+		SS_SIGNAL_TYPE_DVI,
 		&clk_src->dvi_ss_params,
 		&clk_src->dvi_ss_params_cnt);
 }

@@ -43,6 +43,18 @@ enum signal_type {
 	SIGNAL_TYPE_ALL			= (1 << SIGNAL_TYPE_COUNT) - 1
 };
 
+/* for spreadspectrum info */
+enum ss_signal_type {
+	SS_SIGNAL_TYPE_NONE = 0L, /* no signal */
+	SS_SIGNAL_TYPE_DVI,
+	SS_SIGNAL_TYPE_HDMI,
+	SS_SIGNAL_TYPE_LVDS,
+	SS_SIGNAL_TYPE_DISPLAY_PORT,
+	SS_SIGNAL_TYPE_GPU_PLL,
+	SS_SIGNAL_TYPE_UNKNOWN
+};
+
+
 /* help functions for signal types manipulation */
 bool dc_is_hdmi_signal(enum signal_type signal);
 bool dc_is_dp_sst_signal(enum signal_type signal);
