@@ -47,7 +47,7 @@ enum {
 	DP_MST_UPDATE_MAX_RETRY = 50
 };
 
-static struct stream_encoder_funcs dce110_str_enc_funcs = {
+static const struct stream_encoder_funcs dce110_str_enc_funcs = {
 	.dp_set_stream_attribute =
 		dce110_stream_encoder_dp_set_stream_attribute,
 	.hdmi_set_stream_attribute =
