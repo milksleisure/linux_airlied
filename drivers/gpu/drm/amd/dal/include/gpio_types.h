@@ -29,6 +29,8 @@
 #define BUNDLE_A_MASK 0x00FFF000L
 #define BUNDLE_B_MASK 0x00000FFFL
 
+#include "display_gpio_types.h"
+
 /*
  * gpio_result
  *
@@ -73,23 +75,6 @@ enum gpio_id {
 #define GPIO_ENUM_UNKNOWN \
 	32
 
-struct gpio_pin_info {
-	uint32_t offset;
-	uint32_t offset_y;
-	uint32_t offset_en;
-	uint32_t offset_mask;
-
-	uint32_t mask;
-	uint32_t mask_y;
-	uint32_t mask_en;
-	uint32_t mask_mask;
-};
-
-enum gpio_pin_output_state {
-	GPIO_PIN_OUTPUT_STATE_ACTIVE_LOW,
-	GPIO_PIN_OUTPUT_STATE_ACTIVE_HIGH,
-	GPIO_PIN_OUTPUT_STATE_DEFAULT = GPIO_PIN_OUTPUT_STATE_ACTIVE_LOW
-};
 
 enum gpio_generic {
 	GPIO_GENERIC_UNKNOWN = (-1),
