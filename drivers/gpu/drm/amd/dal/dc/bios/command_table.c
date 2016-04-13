@@ -23,8 +23,9 @@
  *
  */
 
-#include "dm_services.h"
+#include "debug_helpers.h"
 
+#include "cgs_linux.h"
 #include "atom.h"
 
 #include "include/bios_parser_interface.h"
@@ -346,7 +347,7 @@ static enum bp_result transmitter_control_v2(
 	enum bp_result result = BP_RESULT_FAILURE;
 	DIG_TRANSMITTER_CONTROL_PARAMETERS_V2 params;
 	enum connector_id connector_id =
-		dal_graphics_object_id_get_connector_id(cntl->connector_obj_id);
+		display_graphics_object_id_get_connector_id(cntl->connector_obj_id);
 
 	memset(&params, 0, sizeof(params));
 
@@ -467,7 +468,7 @@ static enum bp_result transmitter_control_v3(
 	DIG_TRANSMITTER_CONTROL_PARAMETERS_V3 params;
 	uint32_t pll_id;
 	enum connector_id conn_id =
-			dal_graphics_object_id_get_connector_id(cntl->connector_obj_id);
+			display_graphics_object_id_get_connector_id(cntl->connector_obj_id);
 	const struct command_table_helper *cmd = bp->cmd_helper;
 	bool dual_link_conn = (CONNECTOR_ID_DUAL_LINK_DVII == conn_id)
 					|| (CONNECTOR_ID_DUAL_LINK_DVID == conn_id);
@@ -618,7 +619,7 @@ static enum bp_result transmitter_control_v4(
 	DIG_TRANSMITTER_CONTROL_PARAMETERS_V4 params;
 	uint32_t ref_clk_src_id;
 	enum connector_id conn_id =
-			dal_graphics_object_id_get_connector_id(cntl->connector_obj_id);
+			display_graphics_object_id_get_connector_id(cntl->connector_obj_id);
 	const struct command_table_helper *cmd = bp->cmd_helper;
 
 	memset(&params, 0, sizeof(params));
@@ -954,7 +955,7 @@ static enum bp_result set_pixel_clock_v3(
 	params = (PIXEL_CLOCK_PARAMETERS_V3 *)&allocation.sPCLKInput;
 	params->ucTransmitterId =
 			bp->cmd_helper->encoder_id_to_atom(
-					dal_graphics_object_id_get_encoder_id(
+					display_graphics_object_id_get_encoder_id(
 							bp_params->encoder_object_id));
 	params->ucEncoderMode =
 			(uint8_t)(bp->cmd_helper->encoder_mode_bp_to_atom(
@@ -1019,7 +1020,7 @@ static enum bp_result set_pixel_clock_v5(
 				(uint8_t)(bp_params->pixel_clock_post_divider);
 		clk.sPCLKInput.ucTransmitterID =
 				bp->cmd_helper->encoder_id_to_atom(
-						dal_graphics_object_id_get_encoder_id(
+						display_graphics_object_id_get_encoder_id(
 								bp_params->encoder_object_id));
 		clk.sPCLKInput.ucEncoderMode =
 				(uint8_t)bp->cmd_helper->encoder_mode_bp_to_atom(
@@ -1095,7 +1096,7 @@ static enum bp_result set_pixel_clock_v6(
 				(uint8_t) bp_params->pixel_clock_post_divider;
 		clk.sPCLKInput.ucTransmitterID =
 				bp->cmd_helper->encoder_id_to_atom(
-						dal_graphics_object_id_get_encoder_id(
+						display_graphics_object_id_get_encoder_id(
 								bp_params->encoder_object_id));
 		clk.sPCLKInput.ucEncoderMode =
 				(uint8_t) bp->cmd_helper->encoder_mode_bp_to_atom(
@@ -1163,7 +1164,7 @@ static enum bp_result set_pixel_clock_v7(
 		 */
 		clk.ucCRTC = controller_id;
 		clk.ucPpll = (uint8_t) pll_id;
-		clk.ucTransmitterID = bp->cmd_helper->encoder_id_to_atom(dal_graphics_object_id_get_encoder_id(bp_params->encoder_object_id));
+		clk.ucTransmitterID = bp->cmd_helper->encoder_id_to_atom(display_graphics_object_id_get_encoder_id(bp_params->encoder_object_id));
 		clk.ucEncoderMode = (uint8_t) bp->cmd_helper->encoder_mode_bp_to_atom(bp_params->signal_type, false);
 
 		/* We need to convert from KHz units into 10KHz units */
@@ -1449,7 +1450,7 @@ static enum bp_result adjust_display_pll_v2(
 	params.usPixelClock = cpu_to_le16((uint16_t)(pixel_clock_10KHz_in));
 	params.ucTransmitterID =
 			bp->cmd_helper->encoder_id_to_atom(
-					dal_graphics_object_id_get_encoder_id(
+					display_graphics_object_id_get_encoder_id(
 							bp_params->encoder_object_id));
 	params.ucEncodeMode =
 			(uint8_t)bp->cmd_helper->encoder_mode_bp_to_atom(
@@ -1472,7 +1473,7 @@ static enum bp_result adjust_display_pll_v3(
 	params.sInput.usPixelClock = cpu_to_le16((uint16_t)pixel_clk_10_kHz_in);
 	params.sInput.ucTransmitterID =
 			bp->cmd_helper->encoder_id_to_atom(
-					dal_graphics_object_id_get_encoder_id(
+					display_graphics_object_id_get_encoder_id(
 							bp_params->encoder_object_id));
 	params.sInput.ucEncodeMode =
 			(uint8_t)bp->cmd_helper->encoder_mode_bp_to_atom(

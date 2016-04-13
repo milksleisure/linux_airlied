@@ -23,12 +23,11 @@
  *
  */
 
-#include "dm_services.h"
+#include "debug_helpers.h"
 
 #include "atom.h"
 
 #include "include/bios_parser_types.h"
-#include "include/adapter_service_types.h"
 
 #include "command_table_helper.h"
 

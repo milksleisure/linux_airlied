@@ -23,8 +23,8 @@
  *
  */
 
-#include "dm_services.h"
-
+#include "debug_helpers.h"
+#include "cgs_linux.h"
 #include "atom.h"
 
 #include "include/bios_parser_types.h"

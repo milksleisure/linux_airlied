@@ -38,6 +38,7 @@
 #include "dce112/bios_parser_helper_dce112.h"
 #endif
 
+struct cgs_device;
 struct bios_parser;
 
 struct bios_parser_helper {

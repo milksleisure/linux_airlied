@@ -24,6 +24,7 @@
 #ifndef _CGS_COMMON_H
 #define _CGS_COMMON_H
 
+#include <linux/types.h>
 #include "amd_shared.h"
 
 struct cgs_device;
