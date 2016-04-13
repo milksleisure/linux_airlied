@@ -1310,18 +1310,6 @@ uint32_t dal_adapter_service_get_sw_i2c_speed(
 }
 
 /*
- * dal_adapter_service_get_hw_i2c_speed
- *
- * Get HW I2C speed
- */
-uint32_t dal_adapter_service_get_hw_i2c_speed(
-	struct adapter_service *as)
-{
-	/* TODO: only from ASIC caps. Feature key is not implemented*/
-	return as->asic_cap->data[ASIC_DATA_DEFAULT_I2C_SPEED_IN_KHZ];
-}
-
-/*
  * dal_adapter_service_get_asic_vram_bit_width
  *
  * Get the video RAM bit width set on the ASIC
@@ -1332,7 +1320,7 @@ uint32_t dal_adapter_service_get_asic_vram_bit_width(
 	return as->asic_cap->data[ASIC_DATA_VRAM_BITWIDTH];
 }
 
-struct dal_asic_runtime_flags dal_adapter_service_get_asic_runtime_flags(
+static struct dal_asic_runtime_flags dal_adapter_service_get_asic_runtime_flags(
 		struct adapter_service *as)
 {
 	return as->asic_cap->runtime_flags;
