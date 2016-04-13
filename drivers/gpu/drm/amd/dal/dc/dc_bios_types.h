@@ -91,10 +91,6 @@ enum bp_result dc_bios_encoder_control(struct dc_bios *bios,
 				       struct bp_encoder_control *cntl);
 enum bp_result dc_bios_transmitter_control(struct dc_bios *bios,
 					   struct bp_transmitter_control *cntl);
-enum bp_result dc_bios_crt_control(struct dc_bios *bios,
-				   enum engine_id engine_id,
-				   bool enable,
-				   uint32_t pixel_clock);
 enum bp_result dc_bios_enable_crtc(struct dc_bios *bios,
 				   enum controller_id id,
 				   bool enable);
@@ -109,26 +105,11 @@ enum bp_result dc_bios_enable_spread_spectrum_on_ppll(struct dc_bios *bios,
 						      bool enable);
 enum bp_result dc_bios_program_crtc_timing(struct dc_bios *bios,
 					   struct bp_hw_crtc_timing_parameters *bp_params);
-enum bp_result dc_bios_blank_crtc(struct dc_bios *bios,
-				  struct bp_blank_crtc_parameters *bp_params,
-				  bool blank);
-enum bp_result dc_bios_set_overscan(struct dc_bios *bios,
-				    struct bp_hw_crtc_overscan_parameters *bp_params);
 enum bp_result dc_bios_crtc_source_select(struct dc_bios *bios,
 					  struct bp_crtc_source_select *bp_params);
 enum bp_result dc_bios_program_display_engine_pll(struct dc_bios *bios,
 						  struct bp_pixel_clock_parameters *bp_params);
-enum bp_result dc_bios_get_divider_for_target_display_clock(struct dc_bios *bios,
-							    struct bp_display_clock_parameters *bp_params);
-enum signal_type dc_bios_dac_load_detect(struct dc_bios *bios,
-					 struct graphics_object_id encoder,
-					 struct graphics_object_id connector,
-					 enum signal_type display_signal);
-enum bp_result dc_bios_enable_memory_requests(struct dc_bios *bios,
-					      enum controller_id controller_id,
-					      bool enable);
-enum bp_result dc_bios_external_encoder_control(struct dc_bios *bios,
-						struct bp_external_encoder_control *cntl);
+
 enum bp_result dc_bios_enable_disp_power_gating(struct dc_bios *bios,
 						enum controller_id controller_id,
 						enum bp_pipe_control_action action);

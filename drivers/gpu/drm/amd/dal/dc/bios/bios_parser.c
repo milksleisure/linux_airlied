@@ -914,32 +914,6 @@ enum bp_result dc_bios_program_display_engine_pll(
 
 }
 
-enum signal_type dc_bios_dac_load_detect(struct dc_bios *dcb,
-					 struct graphics_object_id encoder,
-					 struct graphics_object_id connector,
-					 enum signal_type display_signal)
-{
-	struct bios_parser *bp = BP_FROM_DCB(dcb);
-
-	if (!bp->cmd_tbl.dac_load_detection)
-		return SIGNAL_TYPE_NONE;
-
-	return bp->cmd_tbl.dac_load_detection(bp, encoder, connector,
-		display_signal);
-}
-
-enum bp_result dc_bios_get_divider_for_target_display_clock(
-	struct dc_bios *dcb,
-	struct bp_display_clock_parameters *bp_params)
-{
-	struct bios_parser *bp = BP_FROM_DCB(dcb);
-
-	if (!bp->cmd_tbl.compute_memore_engine_pll)
-		return BP_RESULT_FAILURE;
-
-	return bp->cmd_tbl.compute_memore_engine_pll(bp, bp_params);
-}
-
 enum bp_result dc_bios_enable_crtc(
 	struct dc_bios *dcb,
 	enum controller_id id,
@@ -953,19 +927,6 @@ enum bp_result dc_bios_enable_crtc(
 	return bp->cmd_tbl.enable_crtc(bp, id, enable);
 }
 
-enum bp_result dc_bios_blank_crtc(
-	struct dc_bios *dcb,
-	struct bp_blank_crtc_parameters *bp_params,
-	bool blank)
-{
-	struct bios_parser *bp = BP_FROM_DCB(dcb);
-
-	if (!bp->cmd_tbl.blank_crtc)
-		return BP_RESULT_FAILURE;
-
-	return bp->cmd_tbl.blank_crtc(bp, bp_params, blank);
-}
-
 enum bp_result dc_bios_crtc_source_select(
 	struct dc_bios *dcb,
 	struct bp_crtc_source_select *bp_params)
@@ -976,43 +937,6 @@ enum bp_result dc_bios_crtc_source_select(
 		return BP_RESULT_FAILURE;
 
 	return bp->cmd_tbl.select_crtc_source(bp, bp_params);
-}
-
-enum bp_result dc_bios_set_overscan(
-	struct dc_bios *dcb,
-	struct bp_hw_crtc_overscan_parameters *bp_params)
-{
-	struct bios_parser *bp = BP_FROM_DCB(dcb);
-
-	if (!bp->cmd_tbl.set_crtc_overscan)
-		return BP_RESULT_FAILURE;
-
-	return bp->cmd_tbl.set_crtc_overscan(bp, bp_params);
-}
-
-enum bp_result dc_bios_enable_memory_requests(
-	struct dc_bios *dcb,
-	enum controller_id controller_id,
-	bool enable)
-{
-	struct bios_parser *bp = BP_FROM_DCB(dcb);
-
-	if (!bp->cmd_tbl.enable_crtc_mem_req)
-		return BP_RESULT_FAILURE;
-
-	return bp->cmd_tbl.enable_crtc_mem_req(bp, controller_id, enable);
-}
-
-enum bp_result dc_bios_external_encoder_control(
-	struct dc_bios *dcb,
-	struct bp_external_encoder_control *cntl)
-{
-	struct bios_parser *bp = BP_FROM_DCB(dcb);
-
-	if (!bp->cmd_tbl.external_encoder_control)
-		return BP_RESULT_FAILURE;
-
-	return bp->cmd_tbl.external_encoder_control(bp, cntl);
 }
 
 enum bp_result dc_bios_enable_disp_power_gating(
@@ -1037,62 +961,6 @@ bool dc_bios_is_device_id_supported(struct dc_bios *dcb,
 	uint32_t mask = get_support_mask_for_device_id(id);
 
 	return (le16_to_cpu(bp->object_info_tbl.v1_1->usDeviceSupport) & mask) != 0;
-}
-
-enum bp_result dc_bios_crt_control(
-	struct dc_bios *dcb,
-	enum engine_id engine_id,
-	bool enable,
-	uint32_t pixel_clock)
-{
-	struct bios_parser *bp = BP_FROM_DCB(dcb);
-	uint8_t standard;
-
-	if (!bp->cmd_tbl.dac1_encoder_control &&
-		engine_id == ENGINE_ID_DACA)
-		return BP_RESULT_FAILURE;
-	if (!bp->cmd_tbl.dac2_encoder_control &&
-		engine_id == ENGINE_ID_DACB)
-		return BP_RESULT_FAILURE;
-	/* validate params */
-	switch (engine_id) {
-	case ENGINE_ID_DACA:
-	case ENGINE_ID_DACB:
-		break;
-	default:
-		/* unsupported engine */
-		return BP_RESULT_FAILURE;
-	}
-
-	standard = ATOM_DAC1_PS2; /* == ATOM_DAC2_PS2 */
-
-	if (enable) {
-		if (engine_id == ENGINE_ID_DACA) {
-			bp->cmd_tbl.dac1_encoder_control(bp, enable,
-				pixel_clock, standard);
-			if (bp->cmd_tbl.dac1_output_control != NULL)
-				bp->cmd_tbl.dac1_output_control(bp, enable);
-		} else {
-			bp->cmd_tbl.dac2_encoder_control(bp, enable,
-				pixel_clock, standard);
-			if (bp->cmd_tbl.dac2_output_control != NULL)
-				bp->cmd_tbl.dac2_output_control(bp, enable);
-		}
-	} else {
-		if (engine_id == ENGINE_ID_DACA) {
-			if (bp->cmd_tbl.dac1_output_control != NULL)
-				bp->cmd_tbl.dac1_output_control(bp, enable);
-			bp->cmd_tbl.dac1_encoder_control(bp, enable,
-				pixel_clock, standard);
-		} else {
-			if (bp->cmd_tbl.dac2_output_control != NULL)
-				bp->cmd_tbl.dac2_output_control(bp, enable);
-			bp->cmd_tbl.dac2_encoder_control(bp, enable,
-				pixel_clock, standard);
-		}
-	}
-
-	return BP_RESULT_OK;
 }
 
 static ATOM_HPD_INT_RECORD *get_hpd_record(struct bios_parser *bp,
