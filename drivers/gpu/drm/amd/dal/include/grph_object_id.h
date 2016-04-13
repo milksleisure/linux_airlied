@@ -29,17 +29,7 @@
 #include "display_grph_object_id.h"
 /* some simple functions for convenient graphics_object_id handle */
 
-static inline struct graphics_object_id dal_graphics_object_id_init(
-	uint32_t id,
-	enum object_enum_id enum_id,
-	enum object_type type)
-{
-	struct graphics_object_id result = {
-		id, enum_id, type, 0
-	};
-
-	return result;
-}
+#define dal_graphics_object_id_init display_graphics_object_id_init
 
 bool dal_graphics_object_id_is_valid(
 	struct graphics_object_id id);
@@ -49,16 +39,10 @@ bool dal_graphics_object_id_is_equal(
 uint32_t dal_graphics_object_id_to_uint(
 	struct graphics_object_id id);
 
-enum controller_id dal_graphics_object_id_get_controller_id(
-	struct graphics_object_id id);
-enum clock_source_id dal_graphics_object_id_get_clock_source_id(
-	struct graphics_object_id id);
-enum encoder_id dal_graphics_object_id_get_encoder_id(
-	struct graphics_object_id id);
-enum connector_id dal_graphics_object_id_get_connector_id(
-	struct graphics_object_id id);
-enum audio_id dal_graphics_object_id_get_audio_id(
-	struct graphics_object_id id);
-enum engine_id dal_graphics_object_id_get_engine_id(
-	struct graphics_object_id id);
+#define dal_graphics_object_id_get_controller_id display_graphics_object_id_get_controller_id
+#define dal_graphics_object_id_get_clock_source_id display_graphics_object_id_get_clock_source_id
+#define dal_graphics_object_id_get_encoder_id display_graphics_object_id_get_encoder_id
+#define dal_graphics_object_id_get_connector_id display_graphics_object_id_get_connector_id
+#define dal_graphics_object_id_get_audio_id display_graphics_object_id_get_audio_id
+#define dal_graphics_object_id_get_engine_id display_graphics_object_id_get_engine_id
 #endif

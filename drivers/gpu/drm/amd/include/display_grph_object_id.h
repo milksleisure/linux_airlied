@@ -237,5 +237,74 @@ struct graphics_object_id {
 	uint32_t  reserved:16; /* for padding. total size should be u32 */
 };
 
+static inline struct graphics_object_id display_graphics_object_id_init(
+	uint32_t id,
+	enum object_enum_id enum_id,
+	enum object_type type)
+{
+	struct graphics_object_id result = {
+		id, enum_id, type, 0
+	};
 
+	return result;
+}
+
+static inline bool display_graphics_object_id_is_equal_unchecked(
+	struct graphics_object_id id1,
+	struct graphics_object_id id2)
+{
+	if (id1.id == id2.id && id1.enum_id == id2.enum_id
+	    && id1.type == id2.type)
+		return true;
+
+	return false;
+}
+
+static inline enum controller_id display_graphics_object_id_get_controller_id(
+	struct graphics_object_id id)
+{
+	if (id.type == OBJECT_TYPE_CONTROLLER)
+		return id.id;
+	return CONTROLLER_ID_UNDEFINED;
+}
+
+static inline enum clock_source_id display_graphics_object_id_get_clock_source_id(
+	struct graphics_object_id id)
+{
+	if (id.type == OBJECT_TYPE_CLOCK_SOURCE)
+		return id.id;
+	return CLOCK_SOURCE_ID_UNDEFINED;
+}
+
+static inline enum encoder_id display_graphics_object_id_get_encoder_id(
+	struct graphics_object_id id)
+{
+	if (id.type == OBJECT_TYPE_ENCODER)
+		return id.id;
+	return ENCODER_ID_UNKNOWN;
+}
+
+static inline enum connector_id display_graphics_object_id_get_connector_id(
+	struct graphics_object_id id)
+{
+	if (id.type == OBJECT_TYPE_CONNECTOR)
+		return id.id;
+	return CONNECTOR_ID_UNKNOWN;
+}
+
+static inline enum audio_id display_graphics_object_id_get_audio_id(
+	struct graphics_object_id id)
+{
+	if (id.type == OBJECT_TYPE_AUDIO)
+		return id.id;
+	return AUDIO_ID_UNKNOWN;
+}
+
+static inline enum engine_id display_graphics_object_id_get_engine_id(
+	struct graphics_object_id id)
+{
+	if (id.type == OBJECT_TYPE_ENGINE)
+		return id.id;
+	return ENGINE_ID_UNKNOWN;
+}
 #endif
