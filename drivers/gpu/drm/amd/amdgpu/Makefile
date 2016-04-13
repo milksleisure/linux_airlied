@@ -9,6 +9,8 @@ FULL_AMD_DAL_PATH = $(FULL_AMD_PATH)/$(DAL_FOLDER_NAME)
 ccflags-y := -Iinclude/drm -I$(FULL_AMD_PATH)/include/asic_reg \
 	-I$(FULL_AMD_PATH)/include \
 	-I$(FULL_AMD_PATH)/amdgpu \
+	-I$(FULL_AMD_PATH)/display/include \
+	-I$(FULL_AMD_PATH)/display         \
 	-I$(FULL_AMD_PATH)/scheduler \
 	-I$(FULL_AMD_PATH)/powerplay/inc \
 	-I$(FULL_AMD_PATH)/acp/include \
@@ -101,6 +103,31 @@ amdgpu-y += \
 	../scheduler/sched_fence.o \
 	amdgpu_job.o
 
+# DAL bios parser
+amdgpu-y += \
+	../display/bios/bios_parser.o \
+	../display/bios/command_table.o \
+	../display/bios/command_table_helper.o
+
+ifdef CONFIG_DRM_AMD_DAL_DCE8_0
+ifdef CONFIG_DRM_AMD_DAL_VBIOS_PRESENT
+amdgpu-y += ../display/bios/dce80/bios_parser_helper_dce80.o
+endif
+amdgpu-y += ../display/bios/dce80/command_table_helper_dce80.o
+endif
+ifdef CONFIG_DRM_AMD_DAL_DCE11_0
+ifdef CONFIG_DRM_AMD_DAL_VBIOS_PRESENT
+amdgpu-y += ../display/bios/dce110/bios_parser_helper_dce110.o
+endif
+amdgpu-y += ../display/bios/dce110/command_table_helper_dce110.o
+endif
+ifdef CONFIG_DRM_AMD_DAL_DCE11_2
+ccflags-y += -DLATEST_ATOM_BIOS_SUPPORT
+ifdef CONFIG_DRM_AMD_DAL_VBIOS_PRESENT
+amdgpu-y += ../display/bios/dce112/bios_parser_helper_dce112.o
+endif
+amdgpu-y += ../display/bios/dce112/command_table_helper_dce112.o
+endif
 # ACP componet
 ifneq ($(CONFIG_DRM_AMD_ACP),)
 amdgpu-y += amdgpu_acp.o
