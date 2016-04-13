@@ -27,10 +27,12 @@
 
 #define __DAL_BIOS_PARSER_TYPES_H__
 
+#include "display_types.h"
 #include "display_signal_types.h"
 #include "display_grph_types.h"
 #include "display_gpio_types.h"
-
+#include "display_dp_types.h"
+#include "display_hw_types.h"
 enum bp_result {
 	BP_RESULT_OK = 0, /* There was no error */
 	BP_RESULT_BADINPUT, /*Bad input parameter */

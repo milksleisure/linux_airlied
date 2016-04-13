@@ -22,8 +22,7 @@
  * Authors: AMD
  *
  */
-
-#include "dm_services.h"
+#include "debug_helpers.h"
 
 #include "atom.h"
 
