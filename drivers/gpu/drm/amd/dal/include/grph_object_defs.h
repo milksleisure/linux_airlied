@@ -26,6 +26,7 @@
 #ifndef __DAL_GRPH_OBJECT_DEFS_H__
 #define __DAL_GRPH_OBJECT_DEFS_H__
 
+#include "display_grph_types.h"
 #include "grph_object_id.h"
 
 /* ********************************************************************
@@ -36,19 +37,6 @@
  * ********************************************************************
  * ********************************************************************
  */
-
-/* HPD unit id - HW direct translation */
-enum hpd_source_id {
-	HPD_SOURCEID1 = 0,
-	HPD_SOURCEID2,
-	HPD_SOURCEID3,
-	HPD_SOURCEID4,
-	HPD_SOURCEID5,
-	HPD_SOURCEID6,
-
-	HPD_SOURCEID_COUNT,
-	HPD_SOURCEID_UNKNOWN
-};
 
 /* DDC unit id - HW direct translation */
 enum channel_id {
@@ -73,21 +61,6 @@ enum channel_id {
 	(ch_id) == CHANNEL_ID_DDC6 ? "CHANNEL_ID_DDC6" : \
 	(ch_id) == CHANNEL_ID_DDC_VGA ? "CHANNEL_ID_DDC_VGA" : \
 	(ch_id) == CHANNEL_ID_I2C_PAD ? "CHANNEL_ID_I2C_PAD" : "Invalid"
-
-enum transmitter {
-	TRANSMITTER_UNKNOWN = (-1L),
-	TRANSMITTER_UNIPHY_A,
-	TRANSMITTER_UNIPHY_B,
-	TRANSMITTER_UNIPHY_C,
-	TRANSMITTER_UNIPHY_D,
-	TRANSMITTER_UNIPHY_E,
-	TRANSMITTER_UNIPHY_F,
-	TRANSMITTER_NUTMEG_CRT,
-	TRANSMITTER_TRAVIS_CRT,
-	TRANSMITTER_TRAVIS_LCD,
-	TRANSMITTER_UNIPHY_G,
-	TRANSMITTER_COUNT
-};
 
 /* Generic source of the synchronisation input/output signal */
 /* Can be used for flow control, stereo sync, timing sync, frame sync, etc */
