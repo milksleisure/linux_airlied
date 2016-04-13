@@ -26,6 +26,7 @@
 #ifndef DC_HW_TYPES_H
 #define DC_HW_TYPES_H
 
+#include "display_hw_types.h"
 /******************************************************************************
  * Data types for Virtual HW Layer of DAL3.
  * (see DAL3 design documents for HW Layer definition)
@@ -413,17 +414,6 @@ enum dc_timing_3d_format {
 	/* Top-and-bottom, packed by application/driver into 2D frame*/
 
 	TIMING_3D_FORMAT_MAX,
-};
-
-enum dc_color_depth {
-	COLOR_DEPTH_UNDEFINED,
-	COLOR_DEPTH_666,
-	COLOR_DEPTH_888,
-	COLOR_DEPTH_101010,
-	COLOR_DEPTH_121212,
-	COLOR_DEPTH_141414,
-	COLOR_DEPTH_161616,
-	COLOR_DEPTH_COUNT
 };
 
 enum dc_pixel_encoding {
