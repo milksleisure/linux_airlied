@@ -23,22 +23,35 @@
  *
  */
 
-#ifndef __DC_SIGNAL_TYPES_H__
-#define __DC_SIGNAL_TYPES_H__
+#ifndef __DISPLAY_SIGNAL_TYPES_H__
+#define __DISPLAY_SIGNAL_TYPES_H__
 
-#include "display_signal_types.h"
+enum signal_type {
+	SIGNAL_TYPE_NONE		= 0L,		/* no signal */
+	SIGNAL_TYPE_DVI_SINGLE_LINK	= (1 << 0),
+	SIGNAL_TYPE_DVI_DUAL_LINK	= (1 << 1),
+	SIGNAL_TYPE_HDMI_TYPE_A		= (1 << 2),
+	SIGNAL_TYPE_LVDS		= (1 << 3),
+	SIGNAL_TYPE_RGB			= (1 << 4),
+	SIGNAL_TYPE_DISPLAY_PORT	= (1 << 5),
+	SIGNAL_TYPE_DISPLAY_PORT_MST	= (1 << 6),
+	SIGNAL_TYPE_EDP			= (1 << 7),
+	SIGNAL_TYPE_WIRELESS		= (1 << 8),	/* Wireless Display */
+	SIGNAL_TYPE_VIRTUAL		= (1 << 9),	/* Virtual Display */
 
-/* help functions for signal types manipulation */
-bool dc_is_hdmi_signal(enum signal_type signal);
-bool dc_is_dp_sst_signal(enum signal_type signal);
-bool dc_is_dp_signal(enum signal_type signal);
-bool dc_is_dp_external_signal(enum signal_type signal);
-bool dc_is_analog_signal(enum signal_type signal);
-bool dc_is_embedded_signal(enum signal_type signal);
-bool dc_is_dvi_signal(enum signal_type signal);
-bool dc_is_dvi_single_link_signal(enum signal_type signal);
-bool dc_is_dual_link_signal(enum signal_type signal);
-bool dc_is_audio_capable_signal(enum signal_type signal);
-bool dc_is_digital_encoder_compatible_signal(enum signal_type signal);
+	SIGNAL_TYPE_COUNT		= 10,
+	SIGNAL_TYPE_ALL			= (1 << SIGNAL_TYPE_COUNT) - 1
+};
+
+/* for spreadspectrum info */
+enum ss_signal_type {
+	SS_SIGNAL_TYPE_NONE = 0L, /* no signal */
+	SS_SIGNAL_TYPE_DVI,
+	SS_SIGNAL_TYPE_HDMI,
+	SS_SIGNAL_TYPE_LVDS,
+	SS_SIGNAL_TYPE_DISPLAY_PORT,
+	SS_SIGNAL_TYPE_GPU_PLL,
+	SS_SIGNAL_TYPE_UNKNOWN
+};
 
 #endif
