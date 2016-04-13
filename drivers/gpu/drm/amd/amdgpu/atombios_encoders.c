@@ -89,15 +89,16 @@ amdgpu_atombios_encoder_set_backlight_level(struct amdgpu_encoder *amdgpu_encode
 
 	if ((amdgpu_encoder->devices & (ATOM_DEVICE_LCD_SUPPORT)) &&
 	    amdgpu_encoder->enc_priv) {
+		enum encoder_id encoder_id = display_graphics_object_id_get_encoder_id(amdgpu_encoder->encoder_object_id);
 		dig = amdgpu_encoder->enc_priv;
 		dig->backlight_level = level;
 		amdgpu_atombios_encoder_set_backlight_level_to_reg(adev, dig->backlight_level);
 
-		switch (amdgpu_encoder->encoder_id) {
-		case ENCODER_OBJECT_ID_INTERNAL_UNIPHY:
-		case ENCODER_OBJECT_ID_INTERNAL_KLDSCP_LVTMA:
-		case ENCODER_OBJECT_ID_INTERNAL_UNIPHY1:
-		case ENCODER_OBJECT_ID_INTERNAL_UNIPHY2:
+		switch (encoder_id) {
+		case ENCODER_ID_INTERNAL_UNIPHY:
+		case ENCODER_ID_INTERNAL_KLDSCP_LVTMA:
+		case ENCODER_ID_INTERNAL_UNIPHY1:
+		case ENCODER_ID_INTERNAL_UNIPHY2:
 			if (dig->backlight_level == 0)
 				amdgpu_atombios_encoder_setup_dig_transmitter(encoder,
 								       ATOM_TRANSMITTER_ACTION_LCD_BLOFF, 0, 0);
@@ -271,12 +272,11 @@ void amdgpu_atombios_encoder_fini_backlight(struct amdgpu_encoder *encoder)
 bool amdgpu_atombios_encoder_is_digital(struct drm_encoder *encoder)
 {
 	struct amdgpu_encoder *amdgpu_encoder = to_amdgpu_encoder(encoder);
-	switch (amdgpu_encoder->encoder_id) {
-	case ENCODER_OBJECT_ID_INTERNAL_KLDSCP_DVO1:
-	case ENCODER_OBJECT_ID_INTERNAL_UNIPHY:
-	case ENCODER_OBJECT_ID_INTERNAL_UNIPHY1:
-	case ENCODER_OBJECT_ID_INTERNAL_UNIPHY2:
-	case ENCODER_OBJECT_ID_INTERNAL_UNIPHY3:
+	switch (amdgpu_encoder->encoder_object_id.id) {
+	case ENCODER_ID_INTERNAL_UNIPHY:
+	case ENCODER_ID_INTERNAL_UNIPHY1:
+	case ENCODER_ID_INTERNAL_UNIPHY2:
+	case ENCODER_ID_INTERNAL_UNIPHY3:
 		return true;
 	default:
 		return false;
@@ -305,7 +305,7 @@ bool amdgpu_atombios_encoder_mode_fixup(struct drm_encoder *encoder,
 		amdgpu_panel_mode_fixup(encoder, adjusted_mode);
 
 	if ((amdgpu_encoder->active_device & (ATOM_DEVICE_DFP_SUPPORT | ATOM_DEVICE_LCD_SUPPORT)) ||
-	    (amdgpu_encoder_get_dp_bridge_encoder_id(encoder) != ENCODER_OBJECT_ID_NONE)) {
+	    (amdgpu_encoder_get_dp_bridge_encoder_id(encoder) != ENCODER_ID_UNKNOWN)) {
 		struct drm_connector *connector = amdgpu_get_connector_for_encoder(encoder);
 		amdgpu_atombios_dp_set_link_config(connector, adjusted_mode);
 	}
@@ -324,13 +324,13 @@ amdgpu_atombios_encoder_setup_dac(struct drm_encoder *encoder, int action)
 
 	memset(&args, 0, sizeof(args));
 
-	switch (amdgpu_encoder->encoder_id) {
-	case ENCODER_OBJECT_ID_INTERNAL_DAC1:
-	case ENCODER_OBJECT_ID_INTERNAL_KLDSCP_DAC1:
+	switch (amdgpu_encoder->encoder_object_id.id) {
+	case ENCODER_ID_INTERNAL_DAC1:
+	case ENCODER_ID_INTERNAL_KLDSCP_DAC1:
 		index = GetIndexIntoMasterTable(COMMAND, DAC1EncoderControl);
 		break;
-	case ENCODER_OBJECT_ID_INTERNAL_DAC2:
-	case ENCODER_OBJECT_ID_INTERNAL_KLDSCP_DAC2:
+	case ENCODER_ID_INTERNAL_DAC2:
+	case ENCODER_ID_INTERNAL_KLDSCP_DAC2:
 		index = GetIndexIntoMasterTable(COMMAND, DAC2EncoderControl);
 		break;
 	}
@@ -369,91 +369,15 @@ static u8 amdgpu_atombios_encoder_get_bpc(struct drm_encoder *encoder)
 	}
 }
 
-union dvo_encoder_control {
-	ENABLE_EXTERNAL_TMDS_ENCODER_PS_ALLOCATION ext_tmds;
-	DVO_ENCODER_CONTROL_PS_ALLOCATION dvo;
-	DVO_ENCODER_CONTROL_PS_ALLOCATION_V3 dvo_v3;
-	DVO_ENCODER_CONTROL_PS_ALLOCATION_V1_4 dvo_v4;
-};
-
-static void
-amdgpu_atombios_encoder_setup_dvo(struct drm_encoder *encoder, int action)
-{
-	struct drm_device *dev = encoder->dev;
-	struct amdgpu_device *adev = dev->dev_private;
-	struct amdgpu_encoder *amdgpu_encoder = to_amdgpu_encoder(encoder);
-	union dvo_encoder_control args;
-	int index = GetIndexIntoMasterTable(COMMAND, DVOEncoderControl);
-	uint8_t frev, crev;
-
-	memset(&args, 0, sizeof(args));
-
-	if (!amdgpu_atom_parse_cmd_header(adev->mode_info.atom_context, index, &frev, &crev))
-		return;
-
-	switch (frev) {
-	case 1:
-		switch (crev) {
-		case 1:
-			/* R4xx, R5xx */
-			args.ext_tmds.sXTmdsEncoder.ucEnable = action;
-
-			if (amdgpu_dig_monitor_is_duallink(encoder, amdgpu_encoder->pixel_clock))
-				args.ext_tmds.sXTmdsEncoder.ucMisc |= PANEL_ENCODER_MISC_DUAL;
-
-			args.ext_tmds.sXTmdsEncoder.ucMisc |= ATOM_PANEL_MISC_888RGB;
-			break;
-		case 2:
-			/* RS600/690/740 */
-			args.dvo.sDVOEncoder.ucAction = action;
-			args.dvo.sDVOEncoder.usPixelClock = cpu_to_le16(amdgpu_encoder->pixel_clock / 10);
-			/* DFP1, CRT1, TV1 depending on the type of port */
-			args.dvo.sDVOEncoder.ucDeviceType = ATOM_DEVICE_DFP1_INDEX;
-
-			if (amdgpu_dig_monitor_is_duallink(encoder, amdgpu_encoder->pixel_clock))
-				args.dvo.sDVOEncoder.usDevAttr.sDigAttrib.ucAttribute |= PANEL_ENCODER_MISC_DUAL;
-			break;
-		case 3:
-			/* R6xx */
-			args.dvo_v3.ucAction = action;
-			args.dvo_v3.usPixelClock = cpu_to_le16(amdgpu_encoder->pixel_clock / 10);
-			args.dvo_v3.ucDVOConfig = 0; /* XXX */
-			break;
-		case 4:
-			/* DCE8 */
-			args.dvo_v4.ucAction = action;
-			args.dvo_v4.usPixelClock = cpu_to_le16(amdgpu_encoder->pixel_clock / 10);
-			args.dvo_v4.ucDVOConfig = 0; /* XXX */
-			args.dvo_v4.ucBitPerColor = amdgpu_atombios_encoder_get_bpc(encoder);
-			break;
-		default:
-			DRM_ERROR("Unknown table version %d, %d\n", frev, crev);
-			break;
-		}
-		break;
-	default:
-		DRM_ERROR("Unknown table version %d, %d\n", frev, crev);
-		break;
-	}
-
-	amdgpu_atom_execute_table(adev->mode_info.atom_context, index, (uint32_t *)&args);
-}
-
 int amdgpu_atombios_encoder_get_encoder_mode(struct drm_encoder *encoder)
 {
-	struct amdgpu_encoder *amdgpu_encoder = to_amdgpu_encoder(encoder);
 	struct drm_connector *connector;
 	struct amdgpu_connector *amdgpu_connector;
 	struct amdgpu_connector_atom_dig *dig_connector;
 
 	/* dp bridges are always DP */
-	if (amdgpu_encoder_get_dp_bridge_encoder_id(encoder) != ENCODER_OBJECT_ID_NONE)
+	if (amdgpu_encoder_get_dp_bridge_encoder_id(encoder) != ENCODER_ID_UNKNOWN)
 		return ATOM_ENCODER_MODE_DP;
-
-	/* DVO is always DVO */
-	if ((amdgpu_encoder->encoder_id == ENCODER_OBJECT_ID_INTERNAL_DVO1) ||
-	    (amdgpu_encoder->encoder_id == ENCODER_OBJECT_ID_INTERNAL_KLDSCP_DVO1))
-		return ATOM_ENCODER_MODE_DVO;
 
 	connector = amdgpu_get_connector_for_encoder(encoder);
 	/* if we don't have an active device yet, just use one of
@@ -621,15 +545,15 @@ amdgpu_atombios_encoder_setup_dig_encoder(struct drm_encoder *encoder,
 
 			if (ENCODER_MODE_IS_DP(args.v1.ucEncoderMode) && (dp_clock == 270000))
 				args.v1.ucConfig |= ATOM_ENCODER_CONFIG_DPLINKRATE_2_70GHZ;
-			switch (amdgpu_encoder->encoder_id) {
-			case ENCODER_OBJECT_ID_INTERNAL_UNIPHY:
+			switch (amdgpu_encoder->encoder_object_id.id) {
+			case ENCODER_ID_INTERNAL_UNIPHY:
 				args.v1.ucConfig = ATOM_ENCODER_CONFIG_V2_TRANSMITTER1;
 				break;
-			case ENCODER_OBJECT_ID_INTERNAL_UNIPHY1:
-			case ENCODER_OBJECT_ID_INTERNAL_KLDSCP_LVTMA:
+			case ENCODER_ID_INTERNAL_UNIPHY1:
+			case ENCODER_ID_INTERNAL_KLDSCP_LVTMA:
 				args.v1.ucConfig = ATOM_ENCODER_CONFIG_V2_TRANSMITTER2;
 				break;
-			case ENCODER_OBJECT_ID_INTERNAL_UNIPHY2:
+			case ENCODER_ID_INTERNAL_UNIPHY2:
 				args.v1.ucConfig = ATOM_ENCODER_CONFIG_V2_TRANSMITTER3;
 				break;
 			}
@@ -810,17 +734,14 @@ amdgpu_atombios_encoder_setup_dig_transmitter(struct drm_encoder *encoder, int a
 
 	memset(&args, 0, sizeof(args));
 
-	switch (amdgpu_encoder->encoder_id) {
-	case ENCODER_OBJECT_ID_INTERNAL_KLDSCP_DVO1:
-		index = GetIndexIntoMasterTable(COMMAND, DVOOutputControl);
-		break;
-	case ENCODER_OBJECT_ID_INTERNAL_UNIPHY:
-	case ENCODER_OBJECT_ID_INTERNAL_UNIPHY1:
-	case ENCODER_OBJECT_ID_INTERNAL_UNIPHY2:
-	case ENCODER_OBJECT_ID_INTERNAL_UNIPHY3:
+	switch (amdgpu_encoder->encoder_object_id.id) {
+	case ENCODER_ID_INTERNAL_UNIPHY:
+	case ENCODER_ID_INTERNAL_UNIPHY1:
+	case ENCODER_ID_INTERNAL_UNIPHY2:
+	case ENCODER_ID_INTERNAL_UNIPHY3:
 		index = GetIndexIntoMasterTable(COMMAND, UNIPHYTransmitterControl);
 		break;
-	case ENCODER_OBJECT_ID_INTERNAL_KLDSCP_LVTMA:
+	case ENCODER_ID_INTERNAL_KLDSCP_LVTMA:
 		index = GetIndexIntoMasterTable(COMMAND, LVTMATransmitterControl);
 		break;
 	}
@@ -855,7 +776,7 @@ amdgpu_atombios_encoder_setup_dig_transmitter(struct drm_encoder *encoder, int a
 				args.v1.ucConfig |= ATOM_TRANSMITTER_CONFIG_DIG1_ENCODER;
 
 			if ((adev->flags & AMD_IS_APU) &&
-			    (amdgpu_encoder->encoder_id == ENCODER_OBJECT_ID_INTERNAL_UNIPHY)) {
+			    (amdgpu_encoder->encoder_object_id.id == ENCODER_ID_INTERNAL_UNIPHY)) {
 				if (is_dp ||
 				    !amdgpu_dig_monitor_is_duallink(encoder, amdgpu_encoder->pixel_clock)) {
 					if (igp_lane_info & 0x1)
@@ -908,14 +829,14 @@ amdgpu_atombios_encoder_setup_dig_transmitter(struct drm_encoder *encoder, int a
 			if (dig->linkb)
 				args.v2.acConfig.ucLinkSel = 1;
 
-			switch (amdgpu_encoder->encoder_id) {
-			case ENCODER_OBJECT_ID_INTERNAL_UNIPHY:
+			switch (amdgpu_encoder->encoder_object_id.id) {
+			case ENCODER_ID_INTERNAL_UNIPHY:
 				args.v2.acConfig.ucTransmitterSel = 0;
 				break;
-			case ENCODER_OBJECT_ID_INTERNAL_UNIPHY1:
+			case ENCODER_ID_INTERNAL_UNIPHY1:
 				args.v2.acConfig.ucTransmitterSel = 1;
 				break;
-			case ENCODER_OBJECT_ID_INTERNAL_UNIPHY2:
+			case ENCODER_ID_INTERNAL_UNIPHY2:
 				args.v2.acConfig.ucTransmitterSel = 2;
 				break;
 			}
@@ -968,14 +889,14 @@ amdgpu_atombios_encoder_setup_dig_transmitter(struct drm_encoder *encoder, int a
 			else
 				args.v3.acConfig.ucRefClkSource = pll_id;
 
-			switch (amdgpu_encoder->encoder_id) {
-			case ENCODER_OBJECT_ID_INTERNAL_UNIPHY:
+			switch (amdgpu_encoder->encoder_object_id.id) {
+			case ENCODER_ID_INTERNAL_UNIPHY:
 				args.v3.acConfig.ucTransmitterSel = 0;
 				break;
-			case ENCODER_OBJECT_ID_INTERNAL_UNIPHY1:
+			case ENCODER_ID_INTERNAL_UNIPHY1:
 				args.v3.acConfig.ucTransmitterSel = 1;
 				break;
-			case ENCODER_OBJECT_ID_INTERNAL_UNIPHY2:
+			case ENCODER_ID_INTERNAL_UNIPHY2:
 				args.v3.acConfig.ucTransmitterSel = 2;
 				break;
 			}
@@ -1030,14 +951,14 @@ amdgpu_atombios_encoder_setup_dig_transmitter(struct drm_encoder *encoder, int a
 			} else
 				args.v4.acConfig.ucRefClkSource = pll_id;
 
-			switch (amdgpu_encoder->encoder_id) {
-			case ENCODER_OBJECT_ID_INTERNAL_UNIPHY:
+			switch (amdgpu_encoder->encoder_object_id.id) {
+			case ENCODER_ID_INTERNAL_UNIPHY:
 				args.v4.acConfig.ucTransmitterSel = 0;
 				break;
-			case ENCODER_OBJECT_ID_INTERNAL_UNIPHY1:
+			case ENCODER_ID_INTERNAL_UNIPHY1:
 				args.v4.acConfig.ucTransmitterSel = 1;
 				break;
-			case ENCODER_OBJECT_ID_INTERNAL_UNIPHY2:
+			case ENCODER_ID_INTERNAL_UNIPHY2:
 				args.v4.acConfig.ucTransmitterSel = 2;
 				break;
 			}
@@ -1058,26 +979,26 @@ amdgpu_atombios_encoder_setup_dig_transmitter(struct drm_encoder *encoder, int a
 			else
 				args.v5.usSymClock = cpu_to_le16(amdgpu_encoder->pixel_clock / 10);
 
-			switch (amdgpu_encoder->encoder_id) {
-			case ENCODER_OBJECT_ID_INTERNAL_UNIPHY:
+			switch (amdgpu_encoder->encoder_object_id.id) {
+			case ENCODER_ID_INTERNAL_UNIPHY:
 				if (dig->linkb)
 					args.v5.ucPhyId = ATOM_PHY_ID_UNIPHYB;
 				else
 					args.v5.ucPhyId = ATOM_PHY_ID_UNIPHYA;
 				break;
-			case ENCODER_OBJECT_ID_INTERNAL_UNIPHY1:
+			case ENCODER_ID_INTERNAL_UNIPHY1:
 				if (dig->linkb)
 					args.v5.ucPhyId = ATOM_PHY_ID_UNIPHYD;
 				else
 					args.v5.ucPhyId = ATOM_PHY_ID_UNIPHYC;
 				break;
-			case ENCODER_OBJECT_ID_INTERNAL_UNIPHY2:
+			case ENCODER_ID_INTERNAL_UNIPHY2:
 				if (dig->linkb)
 					args.v5.ucPhyId = ATOM_PHY_ID_UNIPHYF;
 				else
 					args.v5.ucPhyId = ATOM_PHY_ID_UNIPHYE;
 				break;
-			case ENCODER_OBJECT_ID_INTERNAL_UNIPHY3:
+			case ENCODER_ID_INTERNAL_UNIPHY3:
 				args.v5.ucPhyId = ATOM_PHY_ID_UNIPHYG;
 				break;
 			}
@@ -1115,26 +1036,26 @@ amdgpu_atombios_encoder_setup_dig_transmitter(struct drm_encoder *encoder, int a
 			else
 				args.v6.ulSymClock = cpu_to_le32(amdgpu_encoder->pixel_clock / 10);
 
-			switch (amdgpu_encoder->encoder_id) {
-			case ENCODER_OBJECT_ID_INTERNAL_UNIPHY:
+			switch (amdgpu_encoder->encoder_object_id.id) {
+			case ENCODER_ID_INTERNAL_UNIPHY:
 				if (dig->linkb)
 					args.v6.ucPhyId = ATOM_PHY_ID_UNIPHYB;
 				else
 					args.v6.ucPhyId = ATOM_PHY_ID_UNIPHYA;
 				break;
-			case ENCODER_OBJECT_ID_INTERNAL_UNIPHY1:
+			case ENCODER_ID_INTERNAL_UNIPHY1:
 				if (dig->linkb)
 					args.v6.ucPhyId = ATOM_PHY_ID_UNIPHYD;
 				else
 					args.v6.ucPhyId = ATOM_PHY_ID_UNIPHYC;
 				break;
-			case ENCODER_OBJECT_ID_INTERNAL_UNIPHY2:
+			case ENCODER_ID_INTERNAL_UNIPHY2:
 				if (dig->linkb)
 					args.v6.ucPhyId = ATOM_PHY_ID_UNIPHYF;
 				else
 					args.v6.ucPhyId = ATOM_PHY_ID_UNIPHYE;
 				break;
-			case ENCODER_OBJECT_ID_INTERNAL_UNIPHY3:
+			case ENCODER_ID_INTERNAL_UNIPHY3:
 				args.v6.ucPhyId = ATOM_PHY_ID_UNIPHYG;
 				break;
 			}
@@ -1232,7 +1153,7 @@ amdgpu_atombios_encoder_setup_external_encoder(struct drm_encoder *encoder,
 	int dp_clock = 0;
 	int dp_lane_count = 0;
 	enum connector_id connector_object_id = CONNECTOR_ID_UNKNOWN;
-	u32 ext_enum = (ext_amdgpu_encoder->encoder_enum & ENUM_ID_MASK) >> ENUM_ID_SHIFT;
+	enum object_enum_id ext_enum = ext_amdgpu_encoder->encoder_object_id.enum_id;
 
 	if (action == EXTERNAL_ENCODER_ACTION_V3_ENCODER_INIT)
 		connector = amdgpu_get_connector_for_encoder_init(encoder);
@@ -1304,6 +1225,8 @@ amdgpu_atombios_encoder_setup_external_encoder(struct drm_encoder *encoder,
 				break;
 			case GRAPH_OBJECT_ENUM_ID3:
 				args.v3.sExtEncoder.ucConfig |= EXTERNAL_ENCODER_CONFIG_V3_ENCODER3;
+				break;
+			default:
 				break;
 			}
 			args.v3.sExtEncoder.ucBitPerColor = amdgpu_atombios_encoder_get_bpc(encoder);
@@ -1405,13 +1328,13 @@ amdgpu_atombios_encoder_dpms(struct drm_encoder *encoder, int mode)
 	struct amdgpu_encoder *amdgpu_encoder = to_amdgpu_encoder(encoder);
 
 	DRM_DEBUG_KMS("encoder dpms %d to mode %d, devices %08x, active_devices %08x\n",
-		  amdgpu_encoder->encoder_id, mode, amdgpu_encoder->devices,
+		  amdgpu_encoder->encoder_object_id.id, mode, amdgpu_encoder->devices,
 		  amdgpu_encoder->active_device);
-	switch (amdgpu_encoder->encoder_id) {
-	case ENCODER_OBJECT_ID_INTERNAL_UNIPHY:
-	case ENCODER_OBJECT_ID_INTERNAL_UNIPHY1:
-	case ENCODER_OBJECT_ID_INTERNAL_UNIPHY2:
-	case ENCODER_OBJECT_ID_INTERNAL_UNIPHY3:
+	switch (amdgpu_encoder->encoder_object_id.id) {
+	case ENCODER_ID_INTERNAL_UNIPHY:
+	case ENCODER_ID_INTERNAL_UNIPHY1:
+	case ENCODER_ID_INTERNAL_UNIPHY2:
+	case ENCODER_ID_INTERNAL_UNIPHY3:
 		switch (mode) {
 		case DRM_MODE_DPMS_ON:
 			amdgpu_atombios_encoder_setup_dig(encoder, ATOM_ENABLE);
@@ -1423,19 +1346,7 @@ amdgpu_atombios_encoder_dpms(struct drm_encoder *encoder, int mode)
 			break;
 		}
 		break;
-	case ENCODER_OBJECT_ID_INTERNAL_KLDSCP_DVO1:
-		switch (mode) {
-		case DRM_MODE_DPMS_ON:
-			amdgpu_atombios_encoder_setup_dvo(encoder, ATOM_ENABLE);
-			break;
-		case DRM_MODE_DPMS_STANDBY:
-		case DRM_MODE_DPMS_SUSPEND:
-		case DRM_MODE_DPMS_OFF:
-			amdgpu_atombios_encoder_setup_dvo(encoder, ATOM_DISABLE);
-			break;
-		}
-		break;
-	case ENCODER_OBJECT_ID_INTERNAL_KLDSCP_DAC1:
+	case ENCODER_ID_INTERNAL_KLDSCP_DAC1:
 		switch (mode) {
 		case DRM_MODE_DPMS_ON:
 			amdgpu_atombios_encoder_setup_dac(encoder, ATOM_ENABLE);
@@ -1481,25 +1392,23 @@ amdgpu_atombios_encoder_set_crtc_source(struct drm_encoder *encoder)
 		case 1:
 		default:
 			args.v1.ucCRTC = amdgpu_crtc->crtc_id;
-			switch (amdgpu_encoder->encoder_id) {
-			case ENCODER_OBJECT_ID_INTERNAL_TMDS1:
-			case ENCODER_OBJECT_ID_INTERNAL_KLDSCP_TMDS1:
+			switch (amdgpu_encoder->encoder_object_id.id) {
+			case ENCODER_ID_INTERNAL_TMDS1:
+			case ENCODER_ID_INTERNAL_KLDSCP_TMDS1:
 				args.v1.ucDevice = ATOM_DEVICE_DFP1_INDEX;
 				break;
-			case ENCODER_OBJECT_ID_INTERNAL_LVDS:
-			case ENCODER_OBJECT_ID_INTERNAL_LVTM1:
+			case ENCODER_ID_INTERNAL_LVDS:
+			case ENCODER_ID_INTERNAL_LVTM1:
 				if (amdgpu_encoder->devices & ATOM_DEVICE_LCD1_SUPPORT)
 					args.v1.ucDevice = ATOM_DEVICE_LCD1_INDEX;
 				else
 					args.v1.ucDevice = ATOM_DEVICE_DFP3_INDEX;
 				break;
-			case ENCODER_OBJECT_ID_INTERNAL_DVO1:
-			case ENCODER_OBJECT_ID_INTERNAL_DDI:
-			case ENCODER_OBJECT_ID_INTERNAL_KLDSCP_DVO1:
+			case ENCODER_ID_INTERNAL_DDI:
 				args.v1.ucDevice = ATOM_DEVICE_DFP2_INDEX;
 				break;
-			case ENCODER_OBJECT_ID_INTERNAL_DAC1:
-			case ENCODER_OBJECT_ID_INTERNAL_KLDSCP_DAC1:
+			case ENCODER_ID_INTERNAL_DAC1:
+			case ENCODER_ID_INTERNAL_KLDSCP_DAC1:
 				if (amdgpu_encoder->active_device & (ATOM_DEVICE_TV_SUPPORT))
 					args.v1.ucDevice = ATOM_DEVICE_TV1_INDEX;
 				else if (amdgpu_encoder->active_device & (ATOM_DEVICE_CV_SUPPORT))
@@ -1507,8 +1416,8 @@ amdgpu_atombios_encoder_set_crtc_source(struct drm_encoder *encoder)
 				else
 					args.v1.ucDevice = ATOM_DEVICE_CRT1_INDEX;
 				break;
-			case ENCODER_OBJECT_ID_INTERNAL_DAC2:
-			case ENCODER_OBJECT_ID_INTERNAL_KLDSCP_DAC2:
+			case ENCODER_ID_INTERNAL_DAC2:
+			case ENCODER_ID_INTERNAL_KLDSCP_DAC2:
 				if (amdgpu_encoder->active_device & (ATOM_DEVICE_TV_SUPPORT))
 					args.v1.ucDevice = ATOM_DEVICE_TV1_INDEX;
 				else if (amdgpu_encoder->active_device & (ATOM_DEVICE_CV_SUPPORT))
@@ -1520,7 +1429,7 @@ amdgpu_atombios_encoder_set_crtc_source(struct drm_encoder *encoder)
 			break;
 		case 2:
 			args.v2.ucCRTC = amdgpu_crtc->crtc_id;
-			if (amdgpu_encoder_get_dp_bridge_encoder_id(encoder) != ENCODER_OBJECT_ID_NONE) {
+			if (amdgpu_encoder_get_dp_bridge_encoder_id(encoder) != ENCODER_ID_UNKNOWN) {
 				struct drm_connector *connector = amdgpu_get_connector_for_encoder(encoder);
 
 				if (connector->connector_type == DRM_MODE_CONNECTOR_LVDS)
@@ -1534,12 +1443,12 @@ amdgpu_atombios_encoder_set_crtc_source(struct drm_encoder *encoder)
 			} else {
 				args.v2.ucEncodeMode = amdgpu_atombios_encoder_get_encoder_mode(encoder);
 			}
-			switch (amdgpu_encoder->encoder_id) {
-			case ENCODER_OBJECT_ID_INTERNAL_UNIPHY:
-			case ENCODER_OBJECT_ID_INTERNAL_UNIPHY1:
-			case ENCODER_OBJECT_ID_INTERNAL_UNIPHY2:
-			case ENCODER_OBJECT_ID_INTERNAL_UNIPHY3:
-			case ENCODER_OBJECT_ID_INTERNAL_KLDSCP_LVTMA:
+			switch (amdgpu_encoder->encoder_object_id.id) {
+			case ENCODER_ID_INTERNAL_UNIPHY:
+			case ENCODER_ID_INTERNAL_UNIPHY1:
+			case ENCODER_ID_INTERNAL_UNIPHY2:
+			case ENCODER_ID_INTERNAL_UNIPHY3:
+			case ENCODER_ID_INTERNAL_KLDSCP_LVTMA:
 				dig = amdgpu_encoder->enc_priv;
 				switch (dig->dig_encoder) {
 				case 0:
@@ -1565,10 +1474,7 @@ amdgpu_atombios_encoder_set_crtc_source(struct drm_encoder *encoder)
 					break;
 				}
 				break;
-			case ENCODER_OBJECT_ID_INTERNAL_KLDSCP_DVO1:
-				args.v2.ucEncoderID = ASIC_INT_DVO_ENCODER_ID;
-				break;
-			case ENCODER_OBJECT_ID_INTERNAL_KLDSCP_DAC1:
+			case ENCODER_ID_INTERNAL_KLDSCP_DAC1:
 				if (amdgpu_encoder->active_device & (ATOM_DEVICE_TV_SUPPORT))
 					args.v2.ucEncoderID = ASIC_INT_TV_ENCODER_ID;
 				else if (amdgpu_encoder->active_device & (ATOM_DEVICE_CV_SUPPORT))
@@ -1576,7 +1482,7 @@ amdgpu_atombios_encoder_set_crtc_source(struct drm_encoder *encoder)
 				else
 					args.v2.ucEncoderID = ASIC_INT_DAC1_ENCODER_ID;
 				break;
-			case ENCODER_OBJECT_ID_INTERNAL_KLDSCP_DAC2:
+			case ENCODER_ID_INTERNAL_KLDSCP_DAC2:
 				if (amdgpu_encoder->active_device & (ATOM_DEVICE_TV_SUPPORT))
 					args.v2.ucEncoderID = ASIC_INT_TV_ENCODER_ID;
 				else if (amdgpu_encoder->active_device & (ATOM_DEVICE_CV_SUPPORT))
@@ -1588,7 +1494,7 @@ amdgpu_atombios_encoder_set_crtc_source(struct drm_encoder *encoder)
 			break;
 		case 3:
 			args.v3.ucCRTC = amdgpu_crtc->crtc_id;
-			if (amdgpu_encoder_get_dp_bridge_encoder_id(encoder) != ENCODER_OBJECT_ID_NONE) {
+			if (amdgpu_encoder_get_dp_bridge_encoder_id(encoder) != ENCODER_ID_UNKNOWN) {
 				struct drm_connector *connector = amdgpu_get_connector_for_encoder(encoder);
 
 				if (connector->connector_type == DRM_MODE_CONNECTOR_LVDS)
@@ -1603,12 +1509,12 @@ amdgpu_atombios_encoder_set_crtc_source(struct drm_encoder *encoder)
 				args.v2.ucEncodeMode = amdgpu_atombios_encoder_get_encoder_mode(encoder);
 			}
 			args.v3.ucDstBpc = amdgpu_atombios_encoder_get_bpc(encoder);
-			switch (amdgpu_encoder->encoder_id) {
-			case ENCODER_OBJECT_ID_INTERNAL_UNIPHY:
-			case ENCODER_OBJECT_ID_INTERNAL_UNIPHY1:
-			case ENCODER_OBJECT_ID_INTERNAL_UNIPHY2:
-			case ENCODER_OBJECT_ID_INTERNAL_UNIPHY3:
-			case ENCODER_OBJECT_ID_INTERNAL_KLDSCP_LVTMA:
+			switch (amdgpu_encoder->encoder_object_id.id) {
+			case ENCODER_ID_INTERNAL_UNIPHY:
+			case ENCODER_ID_INTERNAL_UNIPHY1:
+			case ENCODER_ID_INTERNAL_UNIPHY2:
+			case ENCODER_ID_INTERNAL_UNIPHY3:
+			case ENCODER_ID_INTERNAL_KLDSCP_LVTMA:
 				dig = amdgpu_encoder->enc_priv;
 				switch (dig->dig_encoder) {
 				case 0:
@@ -1634,10 +1540,7 @@ amdgpu_atombios_encoder_set_crtc_source(struct drm_encoder *encoder)
 					break;
 				}
 				break;
-			case ENCODER_OBJECT_ID_INTERNAL_KLDSCP_DVO1:
-				args.v3.ucEncoderID = ASIC_INT_DVO_ENCODER_ID;
-				break;
-			case ENCODER_OBJECT_ID_INTERNAL_KLDSCP_DAC1:
+			case ENCODER_ID_INTERNAL_KLDSCP_DAC1:
 				if (amdgpu_encoder->active_device & (ATOM_DEVICE_TV_SUPPORT))
 					args.v3.ucEncoderID = ASIC_INT_TV_ENCODER_ID;
 				else if (amdgpu_encoder->active_device & (ATOM_DEVICE_CV_SUPPORT))
@@ -1645,7 +1548,7 @@ amdgpu_atombios_encoder_set_crtc_source(struct drm_encoder *encoder)
 				else
 					args.v3.ucEncoderID = ASIC_INT_DAC1_ENCODER_ID;
 				break;
-			case ENCODER_OBJECT_ID_INTERNAL_KLDSCP_DAC2:
+			case ENCODER_ID_INTERNAL_KLDSCP_DAC2:
 				if (amdgpu_encoder->active_device & (ATOM_DEVICE_TV_SUPPORT))
 					args.v3.ucEncoderID = ASIC_INT_TV_ENCODER_ID;
 				else if (amdgpu_encoder->active_device & (ATOM_DEVICE_CV_SUPPORT))
@@ -1676,11 +1579,11 @@ amdgpu_atombios_encoder_init_dig(struct amdgpu_device *adev)
 		struct amdgpu_encoder *amdgpu_encoder = to_amdgpu_encoder(encoder);
 		struct drm_encoder *ext_encoder = amdgpu_get_external_encoder(encoder);
 
-		switch (amdgpu_encoder->encoder_id) {
-		case ENCODER_OBJECT_ID_INTERNAL_UNIPHY:
-		case ENCODER_OBJECT_ID_INTERNAL_UNIPHY1:
-		case ENCODER_OBJECT_ID_INTERNAL_UNIPHY2:
-		case ENCODER_OBJECT_ID_INTERNAL_UNIPHY3:
+		switch (amdgpu_encoder->encoder_object_id.id) {
+		case ENCODER_ID_INTERNAL_UNIPHY:
+		case ENCODER_ID_INTERNAL_UNIPHY1:
+		case ENCODER_ID_INTERNAL_UNIPHY2:
+		case ENCODER_ID_INTERNAL_UNIPHY3:
 			amdgpu_atombios_encoder_setup_dig_transmitter(encoder, ATOM_TRANSMITTER_ACTION_INIT,
 							       0, 0);
 			break;
@@ -1715,8 +1618,8 @@ amdgpu_atombios_encoder_dac_load_detect(struct drm_encoder *encoder,
 
 		args.sDacload.ucMisc = 0;
 
-		if ((amdgpu_encoder->encoder_id == ENCODER_OBJECT_ID_INTERNAL_DAC1) ||
-		    (amdgpu_encoder->encoder_id == ENCODER_OBJECT_ID_INTERNAL_KLDSCP_DAC1))
+		if ((amdgpu_encoder->encoder_object_id.id == ENCODER_ID_INTERNAL_DAC1) ||
+		    (amdgpu_encoder->encoder_object_id.id == ENCODER_ID_INTERNAL_KLDSCP_DAC1))
 			args.sDacload.ucDacType = ATOM_DAC_A;
 		else
 			args.sDacload.ucDacType = ATOM_DAC_B;
@@ -2002,7 +1905,7 @@ amdgpu_atombios_encoder_get_lcd_info(struct amdgpu_encoder *encoder)
 	union lvds_info *lvds_info;
 	uint8_t frev, crev;
 	struct amdgpu_encoder_atom_dig *lvds = NULL;
-	int encoder_enum = (encoder->encoder_enum & ENUM_ID_MASK) >> ENUM_ID_SHIFT;
+	enum object_enum_id encoder_enum = encoder->encoder_object_id.enum_id;
 
 	if (amdgpu_atom_parse_data_header(mode_info->atom_context, index, NULL,
 				   &frev, &crev, &data_offset)) {
@@ -2134,7 +2037,7 @@ amdgpu_atombios_encoder_get_lcd_info(struct amdgpu_encoder *encoder)
 struct amdgpu_encoder_atom_dig *
 amdgpu_atombios_encoder_get_dig_info(struct amdgpu_encoder *amdgpu_encoder)
 {
-	int encoder_enum = (amdgpu_encoder->encoder_enum & ENUM_ID_MASK) >> ENUM_ID_SHIFT;
+	enum object_enum_id encoder_enum = amdgpu_encoder->encoder_object_id.enum_id;
 	struct amdgpu_encoder_atom_dig *dig = kzalloc(sizeof(struct amdgpu_encoder_atom_dig), GFP_KERNEL);
 
 	if (!dig)

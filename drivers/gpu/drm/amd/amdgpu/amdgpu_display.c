@@ -433,27 +433,27 @@ void amdgpu_print_display_setup(struct drm_device *dev)
 			devices = amdgpu_encoder->devices & amdgpu_connector->devices;
 			if (devices) {
 				if (devices & ATOM_DEVICE_CRT1_SUPPORT)
-					DRM_INFO("    CRT1: %s\n", encoder_names[amdgpu_encoder->encoder_id]);
+					DRM_INFO("    CRT1: %s\n", encoder_names[amdgpu_encoder->encoder_object_id.id]);
 				if (devices & ATOM_DEVICE_CRT2_SUPPORT)
-					DRM_INFO("    CRT2: %s\n", encoder_names[amdgpu_encoder->encoder_id]);
+					DRM_INFO("    CRT2: %s\n", encoder_names[amdgpu_encoder->encoder_object_id.id]);
 				if (devices & ATOM_DEVICE_LCD1_SUPPORT)
-					DRM_INFO("    LCD1: %s\n", encoder_names[amdgpu_encoder->encoder_id]);
+					DRM_INFO("    LCD1: %s\n", encoder_names[amdgpu_encoder->encoder_object_id.id]);
 				if (devices & ATOM_DEVICE_DFP1_SUPPORT)
-					DRM_INFO("    DFP1: %s\n", encoder_names[amdgpu_encoder->encoder_id]);
+					DRM_INFO("    DFP1: %s\n", encoder_names[amdgpu_encoder->encoder_object_id.id]);
 				if (devices & ATOM_DEVICE_DFP2_SUPPORT)
-					DRM_INFO("    DFP2: %s\n", encoder_names[amdgpu_encoder->encoder_id]);
+					DRM_INFO("    DFP2: %s\n", encoder_names[amdgpu_encoder->encoder_object_id.id]);
 				if (devices & ATOM_DEVICE_DFP3_SUPPORT)
-					DRM_INFO("    DFP3: %s\n", encoder_names[amdgpu_encoder->encoder_id]);
+					DRM_INFO("    DFP3: %s\n", encoder_names[amdgpu_encoder->encoder_object_id.id]);
 				if (devices & ATOM_DEVICE_DFP4_SUPPORT)
-					DRM_INFO("    DFP4: %s\n", encoder_names[amdgpu_encoder->encoder_id]);
+					DRM_INFO("    DFP4: %s\n", encoder_names[amdgpu_encoder->encoder_object_id.id]);
 				if (devices & ATOM_DEVICE_DFP5_SUPPORT)
-					DRM_INFO("    DFP5: %s\n", encoder_names[amdgpu_encoder->encoder_id]);
+					DRM_INFO("    DFP5: %s\n", encoder_names[amdgpu_encoder->encoder_object_id.id]);
 				if (devices & ATOM_DEVICE_DFP6_SUPPORT)
-					DRM_INFO("    DFP6: %s\n", encoder_names[amdgpu_encoder->encoder_id]);
+					DRM_INFO("    DFP6: %s\n", encoder_names[amdgpu_encoder->encoder_object_id.id]);
 				if (devices & ATOM_DEVICE_TV1_SUPPORT)
-					DRM_INFO("    TV1: %s\n", encoder_names[amdgpu_encoder->encoder_id]);
+					DRM_INFO("    TV1: %s\n", encoder_names[amdgpu_encoder->encoder_object_id.id]);
 				if (devices & ATOM_DEVICE_CV_SUPPORT)
-					DRM_INFO("    CV: %s\n", encoder_names[amdgpu_encoder->encoder_id]);
+					DRM_INFO("    CV: %s\n", encoder_names[amdgpu_encoder->encoder_object_id.id]);
 			}
 		}
 		i++;

@@ -1958,9 +1958,9 @@ int amdgpu_dm_encoder_init(
 	aencoder->base.possible_crtcs = amdgpu_dm_get_encoder_crtc_mask(adev);
 
 	if (!res)
-		aencoder->encoder_id = link_index;
+		aencoder->encoder_object_id.id = link_index;
 	else
-		aencoder->encoder_id = -1;
+		aencoder->encoder_object_id.id = -1;
 
 	drm_encoder_helper_add(&aencoder->base, &amdgpu_dm_encoder_helper_funcs);
 

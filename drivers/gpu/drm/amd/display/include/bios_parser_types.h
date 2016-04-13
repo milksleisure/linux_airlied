@@ -323,4 +323,6 @@ struct bp_gpio_cntl_info {
 	enum gpio_pin_output_state state;
 };
 
+uint8_t dal_cmd_table_helper_encoder_id_to_atom(enum encoder_id id);
+
 #endif /*__DAL_BIOS_PARSER_TYPES_H__ */

@@ -91,6 +91,5 @@ bool dal_cmd_table_helper_clock_source_id_to_ref_clk_src(
 uint8_t dal_cmd_table_helper_transmitter_bp_to_atom(
 	enum transmitter t);
 
-uint8_t dal_cmd_table_helper_encoder_id_to_atom(
-	enum encoder_id id);
+
 #endif

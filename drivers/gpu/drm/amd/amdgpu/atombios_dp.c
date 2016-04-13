@@ -266,7 +266,7 @@ static int amdgpu_atombios_dp_get_dp_link_config(struct drm_connector *connector
 	unsigned lane_num, i, max_pix_clock;
 
 	if (amdgpu_connector_encoder_get_dp_bridge_encoder_id(connector) ==
-	    ENCODER_OBJECT_ID_NUTMEG) {
+	    ENCODER_ID_EXTERNAL_NUTMEG) {
 		for (lane_num = 1; lane_num <= max_lane_num; lane_num <<= 1) {
 			max_pix_clock = (lane_num * 270000 * 8) / bpp;
 			if (max_pix_clock >= pix_clock) {
@@ -365,7 +365,7 @@ int amdgpu_atombios_dp_get_panel_mode(struct drm_encoder *encoder,
 	struct amdgpu_connector *amdgpu_connector = to_amdgpu_connector(connector);
 	struct amdgpu_connector_atom_dig *dig_connector;
 	int panel_mode = DP_PANEL_MODE_EXTERNAL_DP_MODE;
-	u16 dp_bridge = amdgpu_connector_encoder_get_dp_bridge_encoder_id(connector);
+	enum encoder_id dp_bridge = amdgpu_connector_encoder_get_dp_bridge_encoder_id(connector);
 	u8 tmp;
 
 	if (!amdgpu_connector->con_priv)
@@ -373,14 +373,14 @@ int amdgpu_atombios_dp_get_panel_mode(struct drm_encoder *encoder,
 
 	dig_connector = amdgpu_connector->con_priv;
 
-	if (dp_bridge != ENCODER_OBJECT_ID_NONE) {
+	if (dp_bridge != ENCODER_ID_UNKNOWN) {
 		/* DP bridge chips */
 		if (drm_dp_dpcd_readb(&amdgpu_connector->ddc_bus->aux,
 				      DP_EDP_CONFIGURATION_CAP, &tmp) == 1) {
 			if (tmp & 1)
 				panel_mode = DP_PANEL_MODE_INTERNAL_DP2_MODE;
-			else if ((dp_bridge == ENCODER_OBJECT_ID_NUTMEG) ||
-				 (dp_bridge == ENCODER_OBJECT_ID_TRAVIS))
+			else if ((dp_bridge == ENCODER_ID_EXTERNAL_NUTMEG) ||
+				 (dp_bridge == ENCODER_ID_EXTERNAL_TRAVIS))
 				panel_mode = DP_PANEL_MODE_INTERNAL_DP1_MODE;
 			else
 				panel_mode = DP_PANEL_MODE_EXTERNAL_DP_MODE;

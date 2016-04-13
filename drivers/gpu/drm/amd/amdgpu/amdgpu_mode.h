@@ -292,7 +292,7 @@ struct amdgpu_display_funcs {
 					u32 *vbl, u32 *position);
 	/* display topology setup */
 	void (*add_encoder)(struct amdgpu_device *adev,
-			    uint32_t encoder_enum,
+			    struct graphics_object_id encoder_object_id,
 			    uint32_t supported_device,
 			    u16 caps);
 	void (*add_connector)(struct amdgpu_device *adev,
@@ -450,8 +450,7 @@ struct amdgpu_encoder_atom_dig {
 
 struct amdgpu_encoder {
 	struct drm_encoder base;
-	uint32_t encoder_enum;
-	uint32_t encoder_id;
+	struct graphics_object_id encoder_object_id;
 	uint32_t devices;
 	uint32_t active_device;
 	uint32_t flags;
@@ -599,7 +598,7 @@ amdgpu_get_connector_for_encoder_init(struct drm_encoder *encoder);
 bool amdgpu_dig_monitor_is_duallink(struct drm_encoder *encoder,
 				    u32 pixel_clock);
 
-u16 amdgpu_encoder_get_dp_bridge_encoder_id(struct drm_encoder *encoder);
+enum encoder_id amdgpu_encoder_get_dp_bridge_encoder_id(struct drm_encoder *encoder);
 struct drm_encoder *amdgpu_get_external_encoder(struct drm_encoder *encoder);
 
 bool amdgpu_ddc_probe(struct amdgpu_connector *amdgpu_connector, bool use_aux);

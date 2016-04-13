@@ -35,6 +35,7 @@
 #include "amdgpu_pll.h"
 #include "amdgpu_connectors.h"
 
+#include "dc_bios_types.h"
 void amdgpu_atombios_crtc_overscan_setup(struct drm_crtc *crtc,
 				  struct drm_display_mode *mode,
 				  struct drm_display_mode *adjusted_mode)
@@ -323,7 +324,7 @@ static u32 amdgpu_atombios_crtc_adjust_pll(struct drm_crtc *crtc,
 	amdgpu_crtc->pll_flags = AMDGPU_PLL_USE_FRAC_FB_DIV;
 
 	if ((amdgpu_encoder->devices & (ATOM_DEVICE_LCD_SUPPORT | ATOM_DEVICE_DFP_SUPPORT)) ||
-	    (amdgpu_encoder_get_dp_bridge_encoder_id(encoder) != ENCODER_OBJECT_ID_NONE)) {
+	    (amdgpu_encoder_get_dp_bridge_encoder_id(encoder) != ENCODER_ID_UNKNOWN)) {
 		if (connector) {
 			struct amdgpu_connector *amdgpu_connector = to_amdgpu_connector(connector);
 			struct amdgpu_connector_atom_dig *dig_connector =
@@ -344,9 +345,6 @@ static u32 amdgpu_atombios_crtc_adjust_pll(struct drm_crtc *crtc,
 		}
 	}
 
-	/* DVO wants 2x pixel clock if the DVO chip is in 12 bit mode */
-	if (amdgpu_encoder->encoder_id == ENCODER_OBJECT_ID_INTERNAL_KLDSCP_DVO1)
-		adjusted_clock = mode->clock * 2;
 	if (amdgpu_encoder->active_device & (ATOM_DEVICE_TV_SUPPORT))
 		amdgpu_crtc->pll_flags |= AMDGPU_PLL_PREFER_CLOSEST_LOWER;
 	if (amdgpu_encoder->devices & (ATOM_DEVICE_LCD_SUPPORT))
@@ -388,7 +386,7 @@ static u32 amdgpu_atombios_crtc_adjust_pll(struct drm_crtc *crtc,
 		case 1:
 		case 2:
 			args.v1.usPixelClock = cpu_to_le16(clock / 10);
-			args.v1.ucTransmitterID = amdgpu_encoder->encoder_id;
+			args.v1.ucTransmitterID = dal_cmd_table_helper_encoder_id_to_atom(display_graphics_object_id_get_encoder_id(amdgpu_encoder->encoder_object_id));
 			args.v1.ucEncodeMode = encoder_mode;
 			if (amdgpu_crtc->ss_enabled && amdgpu_crtc->ss.percentage)
 				args.v1.ucConfig |=
@@ -400,7 +398,7 @@ static u32 amdgpu_atombios_crtc_adjust_pll(struct drm_crtc *crtc,
 			break;
 		case 3:
 			args.v3.sInput.usPixelClock = cpu_to_le16(clock / 10);
-			args.v3.sInput.ucTransmitterID = amdgpu_encoder->encoder_id;
+			args.v3.sInput.ucTransmitterID = dal_cmd_table_helper_encoder_id_to_atom(display_graphics_object_id_get_encoder_id(amdgpu_encoder->encoder_object_id));
 			args.v3.sInput.ucEncodeMode = encoder_mode;
 			args.v3.sInput.ucDispPllConfig = 0;
 			if (amdgpu_crtc->ss_enabled && amdgpu_crtc->ss.percentage)
@@ -421,7 +419,7 @@ static u32 amdgpu_atombios_crtc_adjust_pll(struct drm_crtc *crtc,
 						DISPPLL_CONFIG_DUAL_LINK;
 			}
 			if (amdgpu_encoder_get_dp_bridge_encoder_id(encoder) !=
-			    ENCODER_OBJECT_ID_NONE)
+			    ENCODER_ID_UNKNOWN)
 				args.v3.sInput.ucExtTransmitterID =
 					amdgpu_encoder_get_dp_bridge_encoder_id(encoder);
 			else
@@ -570,7 +568,7 @@ void amdgpu_atombios_crtc_program_pll(struct drm_crtc *crtc,
 				      u32 crtc_id,
 				      int pll_id,
 				      u32 encoder_mode,
-				      u32 encoder_id,
+				      struct graphics_object_id encoder_object_id,
 				      u32 clock,
 				      u32 ref_div,
 				      u32 fb_div,
@@ -630,7 +628,7 @@ void amdgpu_atombios_crtc_program_pll(struct drm_crtc *crtc,
 				args.v3.ucMiscInfo = PIXEL_CLOCK_MISC_CRTC_SEL_CRTC1;
 			if (ss_enabled && (ss->type & ATOM_EXTERNAL_SS_MASK))
 				args.v3.ucMiscInfo |= PIXEL_CLOCK_MISC_REF_DIV_SRC;
-			args.v3.ucTransmitterId = encoder_id;
+			args.v3.ucTransmitterId = dal_cmd_table_helper_encoder_id_to_atom(display_graphics_object_id_get_encoder_id(encoder_object_id));
 			args.v3.ucEncoderMode = encoder_mode;
 			break;
 		case 5:
@@ -660,7 +658,7 @@ void amdgpu_atombios_crtc_program_pll(struct drm_crtc *crtc,
 					break;
 				}
 			}
-			args.v5.ucTransmitterID = encoder_id;
+			args.v5.ucTransmitterID = dal_cmd_table_helper_encoder_id_to_atom(display_graphics_object_id_get_encoder_id(encoder_object_id));
 			args.v5.ucEncoderMode = encoder_mode;
 			args.v5.ucPpll = pll_id;
 			break;
@@ -692,7 +690,7 @@ void amdgpu_atombios_crtc_program_pll(struct drm_crtc *crtc,
 					break;
 				}
 			}
-			args.v6.ucTransmitterID = encoder_id;
+			args.v6.ucTransmitterID = dal_cmd_table_helper_encoder_id_to_atom(display_graphics_object_id_get_encoder_id(encoder_object_id));
 			args.v6.ucEncoderMode = encoder_mode;
 			args.v6.ucPpll = pll_id;
 			break;
@@ -720,7 +718,7 @@ void amdgpu_atombios_crtc_program_pll(struct drm_crtc *crtc,
 					break;
 				}
 			}
-			args.v7.ucTransmitterID = encoder_id;
+			args.v7.ucTransmitterID = dal_cmd_table_helper_encoder_id_to_atom(display_graphics_object_id_get_encoder_id(encoder_object_id));
 			args.v7.ucEncoderMode = encoder_mode;
 			args.v7.ucPpll = pll_id;
 			break;
@@ -751,7 +749,7 @@ int amdgpu_atombios_crtc_prepare_pll(struct drm_crtc *crtc,
 	amdgpu_crtc->ss_enabled = false;
 
 	if ((amdgpu_encoder->active_device & (ATOM_DEVICE_LCD_SUPPORT | ATOM_DEVICE_DFP_SUPPORT)) ||
-	    (amdgpu_encoder_get_dp_bridge_encoder_id(amdgpu_crtc->encoder) != ENCODER_OBJECT_ID_NONE)) {
+	    (amdgpu_encoder_get_dp_bridge_encoder_id(amdgpu_crtc->encoder) != ENCODER_ID_UNKNOWN)) {
 		struct amdgpu_encoder_atom_dig *dig = amdgpu_encoder->enc_priv;
 		struct drm_connector *connector =
 			amdgpu_get_connector_for_encoder(amdgpu_crtc->encoder);
@@ -851,7 +849,7 @@ void amdgpu_atombios_crtc_set_pll(struct drm_crtc *crtc, struct drm_display_mode
 				 amdgpu_crtc->crtc_id, &amdgpu_crtc->ss);
 
 	amdgpu_atombios_crtc_program_pll(crtc, amdgpu_crtc->crtc_id, amdgpu_crtc->pll_id,
-				  encoder_mode, amdgpu_encoder->encoder_id, clock,
+				  encoder_mode, amdgpu_encoder->encoder_object_id, clock,
 				  ref_div, fb_div, frac_fb_div, post_div,
 				  amdgpu_crtc->bpc, amdgpu_crtc->ss_enabled, &amdgpu_crtc->ss);
 
