@@ -37,28 +37,6 @@ enum as_signal_type {
 	AS_SIGNAL_TYPE_UNKNOWN
 };
 
-/*
- * Struct used for algorithm of Bandwidth tuning parameters
- * the sequence of the fields is binded with runtime parameter.
- */
-union bandwidth_tuning_params {
-	struct bandwidth_tuning_params_struct {
-		uint32_t read_delay_stutter_off_usec;
-		uint32_t ignore_hblank_time;/*bool*/
-		uint32_t extra_reordering_latency_usec;
-		uint32_t extra_mc_latency_usec;
-		uint32_t data_return_bandwidth_eff;/*in %*/
-		uint32_t dmif_request_bandwidth_eff;/*in %*/
-		uint32_t sclock_latency_multiplier;/*in unit of 0.01*/
-		uint32_t mclock_latency_multiplier;/*in unit of 0.01*/
-		uint32_t fix_latency_multiplier;/*in unit of 0.01*/
-		 /*in unit represent in watermark*/
-		uint32_t use_urgency_watermark_offset;
-	} tuning_info;
-	uint32_t arr_info[sizeof(struct bandwidth_tuning_params_struct)
-		/ sizeof(uint32_t)];
-};
-
 union audio_support {
 	struct {
 		uint32_t DP_AUDIO:1;
