@@ -595,4 +595,6 @@ int amdgpu_crtc_page_flip(struct drm_crtc *crtc,
 			  uint32_t page_flip_flags);
 extern const struct drm_mode_config_funcs amdgpu_mode_funcs;
 
+/* amdgpu_grph_object_id_helpers.c */
+struct graphics_object_id amdgpu_object_id_from_bios_object_id(uint32_t bios_object_id);
 #endif
