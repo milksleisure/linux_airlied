@@ -222,8 +222,8 @@ bool amdgpu_dig_monitor_is_duallink(struct drm_encoder *encoder,
 	case DRM_MODE_CONNECTOR_HDMIA:
 	case DRM_MODE_CONNECTOR_DisplayPort:
 		dig_connector = amdgpu_connector->con_priv;
-		if ((dig_connector->dp_sink_type == CONNECTOR_OBJECT_ID_DISPLAYPORT) ||
-		    (dig_connector->dp_sink_type == CONNECTOR_OBJECT_ID_eDP))
+		if ((dig_connector->dp_sink_type == CONNECTOR_ID_DISPLAY_PORT) ||
+		    (dig_connector->dp_sink_type == CONNECTOR_ID_EDP))
 			return false;
 		else {
 			/* HDMI 1.3 supports up to 340 Mhz over single link */

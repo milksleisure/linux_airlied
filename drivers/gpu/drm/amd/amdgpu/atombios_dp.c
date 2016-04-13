@@ -408,8 +408,8 @@ void amdgpu_atombios_dp_set_link_config(struct drm_connector *connector,
 		return;
 	dig_connector = amdgpu_connector->con_priv;
 
-	if ((dig_connector->dp_sink_type == CONNECTOR_OBJECT_ID_DISPLAYPORT) ||
-	    (dig_connector->dp_sink_type == CONNECTOR_OBJECT_ID_eDP)) {
+	if ((dig_connector->dp_sink_type == CONNECTOR_ID_DISPLAY_PORT) ||
+	    (dig_connector->dp_sink_type == CONNECTOR_ID_EDP)) {
 		ret = amdgpu_atombios_dp_get_dp_link_config(connector, dig_connector->dpcd,
 							    mode->clock,
 							    &dig_connector->dp_lane_count,
@@ -730,8 +730,8 @@ void amdgpu_atombios_dp_link_train(struct drm_encoder *encoder,
 		return;
 	dig_connector = amdgpu_connector->con_priv;
 
-	if ((dig_connector->dp_sink_type != CONNECTOR_OBJECT_ID_DISPLAYPORT) &&
-	    (dig_connector->dp_sink_type != CONNECTOR_OBJECT_ID_eDP))
+	if ((dig_connector->dp_sink_type != CONNECTOR_ID_DISPLAY_PORT) &&
+	    (dig_connector->dp_sink_type != CONNECTOR_ID_EDP))
 		return;
 
 	if (drm_dp_dpcd_readb(&amdgpu_connector->ddc_bus->aux, DP_MAX_LANE_COUNT, &tmp)

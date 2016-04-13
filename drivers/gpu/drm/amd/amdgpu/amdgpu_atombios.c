@@ -273,7 +273,7 @@ bool amdgpu_atombios_get_connector_info_from_object_table(struct amdgpu_device *
 	ATOM_OBJECT_HEADER *obj_header;
 	int i, j, k, path_size, device_support;
 	int connector_type;
-	u16 conn_id, connector_object_id;
+	struct graphics_object_id connector_object_id;
 	struct amdgpu_i2c_bus_rec ddc_bus;
 	struct amdgpu_router router;
 	struct amdgpu_gpio_rec gpio;
@@ -309,21 +309,10 @@ bool amdgpu_atombios_get_connector_info_from_object_table(struct amdgpu_device *
 		path_size += le16_to_cpu(path->usSize);
 
 		if (device_support & le16_to_cpu(path->usDeviceTag)) {
-			uint8_t con_obj_id, con_obj_num, con_obj_type;
-
-			con_obj_id =
-			    (le16_to_cpu(path->usConnObjectId) & OBJECT_ID_MASK)
-			    >> OBJECT_ID_SHIFT;
-			con_obj_num =
-			    (le16_to_cpu(path->usConnObjectId) & ENUM_ID_MASK)
-			    >> ENUM_ID_SHIFT;
-			con_obj_type =
-			    (le16_to_cpu(path->usConnObjectId) &
-			     OBJECT_TYPE_MASK) >> OBJECT_TYPE_SHIFT;
+			connector_object_id = amdgpu_object_id_from_bios_object_id(path->usConnObjectId);
 
 			connector_type =
-				object_connector_convert[con_obj_id];
-			connector_object_id = con_obj_id;
+				object_connector_convert[connector_object_id.id];
 
 			if (connector_type == DRM_MODE_CONNECTOR_Unknown)
 				continue;
@@ -502,13 +491,10 @@ bool amdgpu_atombios_get_connector_info_from_object_table(struct amdgpu_device *
 			/* needed for aux chan transactions */
 			ddc_bus.hpd = hpd.hpd;
 
-			conn_id = le16_to_cpu(path->usConnObjectId);
-
 			amdgpu_display_add_connector(adev,
-						      conn_id,
+						      connector_object_id,
 						      le16_to_cpu(path->usDeviceTag),
 						      connector_type, &ddc_bus,
-						      connector_object_id,
 						      &hpd,
 						      &router);
 

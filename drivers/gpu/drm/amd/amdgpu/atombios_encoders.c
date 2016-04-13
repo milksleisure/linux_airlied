@@ -503,8 +503,8 @@ int amdgpu_atombios_encoder_get_encoder_mode(struct drm_encoder *encoder)
 		break;
 	case DRM_MODE_CONNECTOR_DisplayPort:
 		dig_connector = amdgpu_connector->con_priv;
-		if ((dig_connector->dp_sink_type == CONNECTOR_OBJECT_ID_DISPLAYPORT) ||
-		    (dig_connector->dp_sink_type == CONNECTOR_OBJECT_ID_eDP)) {
+		if ((dig_connector->dp_sink_type == CONNECTOR_ID_DISPLAY_PORT) ||
+		    (dig_connector->dp_sink_type == CONNECTOR_ID_EDP)) {
 			return ATOM_ENCODER_MODE_DP;
 		} else if (amdgpu_audio != 0) {
 			if (amdgpu_connector->audio == AMDGPU_AUDIO_ENABLE)
@@ -750,8 +750,7 @@ amdgpu_atombios_encoder_setup_dig_transmitter(struct drm_encoder *encoder, int a
 		hpd_id = amdgpu_connector->hpd.hpd;
 		dp_clock = dig_connector->dp_clock;
 		dp_lane_count = dig_connector->dp_lane_count;
-		connector_object_id =
-			(amdgpu_connector->connector_object_id & OBJECT_ID_MASK) >> OBJECT_ID_SHIFT;
+		connector_object_id = display_graphics_object_id_get_connector_id(amdgpu_connector->connector_object_id);
 	}
 
 	if (encoder->crtc) {
@@ -1156,8 +1155,7 @@ amdgpu_atombios_encoder_setup_external_encoder(struct drm_encoder *encoder,
 
 		dp_clock = dig_connector->dp_clock;
 		dp_lane_count = dig_connector->dp_lane_count;
-		connector_object_id =
-			(amdgpu_connector->connector_object_id & OBJECT_ID_MASK) >> OBJECT_ID_SHIFT;
+		connector_object_id = display_graphics_object_id_get_connector_id(amdgpu_connector->connector_object_id);
 	}
 
 	memset(&args, 0, sizeof(args));

@@ -61,7 +61,7 @@ void amdgpu_connector_hotplug(struct drm_connector *connector)
 			amdgpu_connector->con_priv;
 
 		/* if existing sink type was not DP no need to retrain */
-		if (dig_connector->dp_sink_type != CONNECTOR_OBJECT_ID_DISPLAYPORT)
+		if (dig_connector->dp_sink_type != CONNECTOR_ID_DISPLAY_PORT)
 			return;
 
 		/* first get sink type as it may be reset after (un)plug */
@@ -69,7 +69,7 @@ void amdgpu_connector_hotplug(struct drm_connector *connector)
 		/* don't do anything if sink is not display port, i.e.,
 		 * passive dp->(dvi|hdmi) adaptor
 		 */
-		if (dig_connector->dp_sink_type == CONNECTOR_OBJECT_ID_DISPLAYPORT) {
+		if (dig_connector->dp_sink_type == CONNECTOR_ID_DISPLAY_PORT) {
 			int saved_dpms = connector->dpms;
 			/* Only turn off the display if it's physically disconnected */
 			if (!amdgpu_display_hpd_sense(adev, amdgpu_connector->hpd.hpd)) {
@@ -128,8 +128,8 @@ int amdgpu_connector_get_monitor_bpc(struct drm_connector *connector)
 		break;
 	case DRM_MODE_CONNECTOR_DisplayPort:
 		dig_connector = amdgpu_connector->con_priv;
-		if ((dig_connector->dp_sink_type == CONNECTOR_OBJECT_ID_DISPLAYPORT) ||
-		    (dig_connector->dp_sink_type == CONNECTOR_OBJECT_ID_eDP) ||
+		if ((dig_connector->dp_sink_type == CONNECTOR_ID_DISPLAY_PORT) ||
+		    (dig_connector->dp_sink_type == CONNECTOR_ID_EDP) ||
 		    drm_detect_hdmi_monitor(amdgpu_connector_edid(connector))) {
 			if (connector->display_info.bpc)
 				bpc = connector->display_info.bpc;
@@ -321,8 +321,8 @@ static void amdgpu_connector_get_edid(struct drm_connector *connector)
 		   (connector->connector_type == DRM_MODE_CONNECTOR_eDP)) {
 		struct amdgpu_connector_atom_dig *dig = amdgpu_connector->con_priv;
 
-		if ((dig->dp_sink_type == CONNECTOR_OBJECT_ID_DISPLAYPORT ||
-		     dig->dp_sink_type == CONNECTOR_OBJECT_ID_eDP) &&
+		if ((dig->dp_sink_type == CONNECTOR_ID_DISPLAY_PORT ||
+		     dig->dp_sink_type == CONNECTOR_ID_EDP) &&
 		    amdgpu_connector->ddc_bus->has_aux)
 			amdgpu_connector->edid = drm_get_edid(connector,
 							      &amdgpu_connector->ddc_bus->aux.ddc);
@@ -1168,9 +1168,9 @@ static int amdgpu_connector_dvi_mode_valid(struct drm_connector *connector,
 	/* XXX check mode bandwidth */
 
 	if (amdgpu_connector->use_digital && (mode->clock > 165000)) {
-		if ((amdgpu_connector->connector_object_id == CONNECTOR_OBJECT_ID_DUAL_LINK_DVI_I) ||
-		    (amdgpu_connector->connector_object_id == CONNECTOR_OBJECT_ID_DUAL_LINK_DVI_D) ||
-		    (amdgpu_connector->connector_object_id == CONNECTOR_OBJECT_ID_HDMI_TYPE_B)) {
+		enum connector_id conn_obj_id = display_graphics_object_id_get_connector_id(amdgpu_connector->connector_object_id);
+		if ((conn_obj_id == CONNECTOR_ID_DUAL_LINK_DVII) ||
+		    (conn_obj_id == CONNECTOR_ID_DUAL_LINK_DVID)) {
 			return MODE_OK;
 		} else if (drm_detect_hdmi_monitor(amdgpu_connector_edid(connector))) {
 			/* HDMI 1.3+ supports max clock of 340 Mhz */
@@ -1373,7 +1373,7 @@ amdgpu_connector_dp_detect(struct drm_connector *connector, bool force)
 				ret = connector_status_connected;
 		}
 		/* eDP is always DP */
-		amdgpu_dig_connector->dp_sink_type = CONNECTOR_OBJECT_ID_DISPLAYPORT;
+		amdgpu_dig_connector->dp_sink_type = CONNECTOR_ID_DISPLAY_PORT;
 		if (!amdgpu_dig_connector->edp_on)
 			amdgpu_atombios_encoder_set_edp_panel_power(connector,
 							     ATOM_TRANSMITTER_ACTION_POWER_ON);
@@ -1385,7 +1385,7 @@ amdgpu_connector_dp_detect(struct drm_connector *connector, bool force)
 	} else if (amdgpu_connector_encoder_get_dp_bridge_encoder_id(connector) !=
 		   ENCODER_OBJECT_ID_NONE) {
 		/* DP bridges are always DP */
-		amdgpu_dig_connector->dp_sink_type = CONNECTOR_OBJECT_ID_DISPLAYPORT;
+		amdgpu_dig_connector->dp_sink_type = CONNECTOR_ID_DISPLAY_PORT;
 		/* get the DPCD from the bridge */
 		amdgpu_atombios_dp_get_dpcd(amdgpu_connector);
 
@@ -1405,10 +1405,10 @@ amdgpu_connector_dp_detect(struct drm_connector *connector, bool force)
 			amdgpu_atombios_dp_get_sinktype(amdgpu_connector);
 		if (amdgpu_display_hpd_sense(adev, amdgpu_connector->hpd.hpd)) {
 			ret = connector_status_connected;
-			if (amdgpu_dig_connector->dp_sink_type == CONNECTOR_OBJECT_ID_DISPLAYPORT)
+			if (amdgpu_dig_connector->dp_sink_type == CONNECTOR_ID_DISPLAY_PORT)
 				amdgpu_atombios_dp_get_dpcd(amdgpu_connector);
 		} else {
-			if (amdgpu_dig_connector->dp_sink_type == CONNECTOR_OBJECT_ID_DISPLAYPORT) {
+			if (amdgpu_dig_connector->dp_sink_type == CONNECTOR_ID_DISPLAY_PORT) {
 				if (!amdgpu_atombios_dp_get_dpcd(amdgpu_connector))
 					ret = connector_status_connected;
 			} else {
@@ -1462,8 +1462,8 @@ static int amdgpu_connector_dp_mode_valid(struct drm_connector *connector,
 		}
 		return MODE_OK;
 	} else {
-		if ((amdgpu_dig_connector->dp_sink_type == CONNECTOR_OBJECT_ID_DISPLAYPORT) ||
-		    (amdgpu_dig_connector->dp_sink_type == CONNECTOR_OBJECT_ID_eDP)) {
+		if ((amdgpu_dig_connector->dp_sink_type == CONNECTOR_ID_DISPLAY_PORT) ||
+		    (amdgpu_dig_connector->dp_sink_type == CONNECTOR_ID_EDP)) {
 			return amdgpu_atombios_dp_mode_valid_helper(connector, mode);
 		} else {
 			if (drm_detect_hdmi_monitor(amdgpu_connector_edid(connector))) {
@@ -1506,11 +1506,11 @@ static const struct drm_connector_funcs amdgpu_connector_edp_funcs = {
 
 void
 amdgpu_connector_add(struct amdgpu_device *adev,
-		      uint32_t connector_id,
+		      struct graphics_object_id connector_object_id,
 		      uint32_t supported_device,
 		      int connector_type,
 		      struct amdgpu_i2c_bus_rec *i2c_bus,
-		      uint16_t connector_object_id,
+
 		      struct amdgpu_hpd *hpd,
 		      struct amdgpu_router *router)
 {
@@ -1531,7 +1531,7 @@ amdgpu_connector_add(struct amdgpu_device *adev,
 	/* see if we already added it */
 	list_for_each_entry(connector, &dev->mode_config.connector_list, head) {
 		amdgpu_connector = to_amdgpu_connector(connector);
-		if (amdgpu_connector->connector_id == connector_id) {
+		if (display_graphics_object_id_is_equal_unchecked(amdgpu_connector->connector_object_id, connector_object_id)) {
 			amdgpu_connector->devices |= supported_device;
 			return;
 		}
@@ -1569,7 +1569,6 @@ amdgpu_connector_add(struct amdgpu_device *adev,
 
 	connector = &amdgpu_connector->base;
 
-	amdgpu_connector->connector_id = connector_id;
 	amdgpu_connector->devices = supported_device;
 	amdgpu_connector->shared_ddc = shared_ddc;
 	amdgpu_connector->connector_object_id = connector_object_id;

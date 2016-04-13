@@ -294,11 +294,10 @@ struct amdgpu_display_funcs {
 			    uint32_t supported_device,
 			    u16 caps);
 	void (*add_connector)(struct amdgpu_device *adev,
-			      uint32_t connector_id,
+			      struct graphics_object_id connector_object_id,
 			      uint32_t supported_device,
 			      int connector_type,
 			      struct amdgpu_i2c_bus_rec *i2c_bus,
-			      uint16_t connector_object_id,
 			      struct amdgpu_hpd *hpd,
 			      struct amdgpu_router *router);
 	void (*stop_mc_access)(struct amdgpu_device *adev,
@@ -453,10 +452,10 @@ struct amdgpu_encoder {
 struct amdgpu_connector_atom_dig {
 	/* displayport */
 	u8 dpcd[DP_RECEIVER_CAP_SIZE];
-	u8 dp_sink_type;
 	int dp_clock;
 	int dp_lane_count;
 	bool edp_on;
+	enum connector_id dp_sink_type;
 };
 
 struct amdgpu_gpio_rec {
@@ -502,7 +501,7 @@ enum amdgpu_connector_dither {
 
 struct amdgpu_connector {
 	struct drm_connector base;
-	uint32_t connector_id;
+	struct graphics_object_id connector_object_id;
 	uint32_t devices;
 	struct amdgpu_i2c_chan *ddc_bus;
 	/* some systems have an hdmi and vga port with a shared ddc line */
@@ -514,7 +513,6 @@ struct amdgpu_connector {
 	void *con_priv;
 	bool dac_load_detect;
 	bool detected_by_load; /* if the connection status was determined by load */
-	uint16_t connector_object_id;
 	struct amdgpu_hpd hpd;
 	struct amdgpu_router router;
 	struct amdgpu_i2c_chan *router_bus;
