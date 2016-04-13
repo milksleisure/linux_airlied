@@ -23,7 +23,7 @@
  *
  */
 
-#include "dm_services.h"
+#include "debug_helpers.h"
 
 #include "atom.h"
 
@@ -104,22 +104,21 @@ struct dc_bios *dal_bios_parser_create(
 {
 	struct bios_parser *bp = NULL;
 
-	bp = dm_alloc(sizeof(struct bios_parser));
+	bp = kzalloc(sizeof(struct bios_parser), GFP_KERNEL);
 	if (!bp)
 		return NULL;
 
 	if (bios_parser_construct(bp, init, dce_version))
 		return (struct dc_bios *)bp;
 
-	dm_free(bp);
+	kfree(bp);
 	BREAK_TO_DEBUGGER();
 	return NULL;
 }
 
 static void destruct(struct bios_parser *bp)
 {
-	if (bp->bios_local_image)
-		dm_free(bp->bios_local_image);
+	kfree(bp->bios_local_image);
 }
 
 void dal_bios_parser_destroy(struct dc_bios **dcb)
@@ -133,7 +132,7 @@ void dal_bios_parser_destroy(struct dc_bios **dcb)
 
 	destruct(bp);
 
-	dm_free(bp);
+	kfree(bp);
 	*dcb = NULL;
 }
 
@@ -2693,7 +2692,7 @@ static uint32_t enum_first_device_id(uint32_t dev_id)
 
 	/* No group found for this device ID. */
 
-	dm_error("%s: incorrect input %d\n", __func__, dev_id);
+	DRM_ERROR("%s: incorrect input %d\n", __func__, dev_id);
 	/* No matching support flag for given device ID */
 	return 0;
 }
@@ -3240,7 +3239,7 @@ static void process_ext_display_connection_info(struct bios_parser *bp,
 		uint8_t *original_bios;
 		/* Step 1: Replace bios image with the new copy which will be
 		 * patched */
-		bp->bios_local_image = dm_alloc(bp->bios_size);
+		bp->bios_local_image = kmalloc(bp->bios_size, GFP_KERNEL);
 		if (bp->bios_local_image == NULL) {
 			BREAK_TO_DEBUGGER();
 			/* Failed to alloc bp->bios_local_image */
@@ -3670,7 +3669,7 @@ struct integrated_info *dc_bios_create_integrated_info(struct dc_bios *dcb)
 	struct bios_parser *bp = BP_FROM_DCB(dcb);
 	struct integrated_info *info = NULL;
 
-	info = dm_alloc(sizeof(struct integrated_info));
+	info = kzalloc(sizeof(struct integrated_info), GFP_KERNEL);
 
 	if (info == NULL) {
 		ASSERT_CRITICAL(0);
@@ -3680,7 +3679,7 @@ struct integrated_info *dc_bios_create_integrated_info(struct dc_bios *dcb)
 	if (construct_integrated_info(bp, info) == BP_RESULT_OK)
 		return info;
 
-	dm_free(info);
+	kfree(info);
 
 	return NULL;
 }
@@ -3694,7 +3693,7 @@ void dc_bios_destroy_integrated_info(struct dc_bios *dcb,
 	}
 
 	if (*info != NULL) {
-		dm_free(*info);
+		kfree(*info);
 		*info = NULL;
 	}
 }
