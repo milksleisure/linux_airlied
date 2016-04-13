@@ -2176,6 +2176,11 @@ static struct graphics_object_id object_id_from_bios_object_id(
 	return go_id;
 }
 
+struct graphics_object_id dc_bios_object_id_from_bios_object_id(uint32_t bios_object_id)
+{
+	return object_id_from_bios_object_id(bios_object_id);
+}
+
 static enum object_type object_type_from_bios_object_id(uint32_t bios_object_id)
 {
 	uint32_t bios_object_type = (bios_object_id & OBJECT_TYPE_MASK)

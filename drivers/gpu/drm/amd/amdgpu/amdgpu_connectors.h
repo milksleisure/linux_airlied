@@ -35,7 +35,7 @@ amdgpu_connector_add(struct amdgpu_device *adev,
 		      uint32_t supported_device,
 		      int connector_type,
 		      struct amdgpu_i2c_bus_rec *i2c_bus,
-		      uint16_t connector_object_id,
+		      struct graphics_object_id connector_object_id,
 		      struct amdgpu_hpd *hpd,
 		      struct amdgpu_router *router);
 

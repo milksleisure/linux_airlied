@@ -1168,9 +1168,9 @@ static int amdgpu_connector_dvi_mode_valid(struct drm_connector *connector,
 	/* XXX check mode bandwidth */
 
 	if (amdgpu_connector->use_digital && (mode->clock > 165000)) {
-		if ((amdgpu_connector->connector_object_id == CONNECTOR_OBJECT_ID_DUAL_LINK_DVI_I) ||
-		    (amdgpu_connector->connector_object_id == CONNECTOR_OBJECT_ID_DUAL_LINK_DVI_D) ||
-		    (amdgpu_connector->connector_object_id == CONNECTOR_OBJECT_ID_HDMI_TYPE_B)) {
+		enum connector_id conn_id = display_graphics_object_id_get_connector_id(amdgpu_connector->connector_object_id);
+		if ((conn_id == CONNECTOR_ID_DUAL_LINK_DVII) ||
+		    (conn_id == CONNECTOR_ID_DUAL_LINK_DVID)) {
 			return MODE_OK;
 		} else if (drm_detect_hdmi_monitor(amdgpu_connector_edid(connector))) {
 			/* HDMI 1.3+ supports max clock of 340 Mhz */
@@ -1510,7 +1510,7 @@ amdgpu_connector_add(struct amdgpu_device *adev,
 		      uint32_t supported_device,
 		      int connector_type,
 		      struct amdgpu_i2c_bus_rec *i2c_bus,
-		      uint16_t connector_object_id,
+		      struct graphics_object_id connector_object_id,
 		      struct amdgpu_hpd *hpd,
 		      struct amdgpu_router *router)
 {

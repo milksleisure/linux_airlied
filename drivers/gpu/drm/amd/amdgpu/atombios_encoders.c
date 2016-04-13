@@ -771,7 +771,7 @@ amdgpu_atombios_encoder_setup_dig_transmitter(struct drm_encoder *encoder, int a
 	int pll_id = 0;
 	int dp_clock = 0;
 	int dp_lane_count = 0;
-	int connector_object_id = 0;
+	enum connector_id connector_object_id = CONNECTOR_ID_UNKNOWN;
 	int igp_lane_info = 0;
 	int dig_encoder = dig->dig_encoder;
 	int hpd_id = AMDGPU_HPD_NONE;
@@ -793,8 +793,7 @@ amdgpu_atombios_encoder_setup_dig_transmitter(struct drm_encoder *encoder, int a
 		hpd_id = amdgpu_connector->hpd.hpd;
 		dp_clock = dig_connector->dp_clock;
 		dp_lane_count = dig_connector->dp_lane_count;
-		connector_object_id =
-			(amdgpu_connector->connector_object_id & OBJECT_ID_MASK) >> OBJECT_ID_SHIFT;
+		connector_object_id = display_graphics_object_id_get_connector_id(amdgpu_connector->connector_object_id);
 	}
 
 	if (encoder->crtc) {
@@ -1232,7 +1231,7 @@ amdgpu_atombios_encoder_setup_external_encoder(struct drm_encoder *encoder,
 	u8 frev, crev;
 	int dp_clock = 0;
 	int dp_lane_count = 0;
-	int connector_object_id = 0;
+	enum connector_id connector_object_id = CONNECTOR_ID_UNKNOWN;
 	u32 ext_enum = (ext_amdgpu_encoder->encoder_enum & ENUM_ID_MASK) >> ENUM_ID_SHIFT;
 
 	if (action == EXTERNAL_ENCODER_ACTION_V3_ENCODER_INIT)
@@ -1247,8 +1246,7 @@ amdgpu_atombios_encoder_setup_external_encoder(struct drm_encoder *encoder,
 
 		dp_clock = dig_connector->dp_clock;
 		dp_lane_count = dig_connector->dp_lane_count;
-		connector_object_id =
-			(amdgpu_connector->connector_object_id & OBJECT_ID_MASK) >> OBJECT_ID_SHIFT;
+		connector_object_id = display_graphics_object_id_get_connector_id(amdgpu_connector->connector_object_id);
 	}
 
 	memset(&args, 0, sizeof(args));

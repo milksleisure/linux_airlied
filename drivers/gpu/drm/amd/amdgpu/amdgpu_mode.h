@@ -43,6 +43,7 @@
 
 #include <drm/drm_dp_mst_helper.h>
 
+#include "display_grph_object_id.h"
 struct amdgpu_bo;
 struct amdgpu_device;
 struct amdgpu_encoder;
@@ -299,7 +300,7 @@ struct amdgpu_display_funcs {
 			      uint32_t supported_device,
 			      int connector_type,
 			      struct amdgpu_i2c_bus_rec *i2c_bus,
-			      uint16_t connector_object_id,
+			      struct graphics_object_id connector_object_id,
 			      struct amdgpu_hpd *hpd,
 			      struct amdgpu_router *router);
 	void (*stop_mc_access)(struct amdgpu_device *adev,
@@ -550,7 +551,8 @@ struct amdgpu_connector {
 	void *con_priv;
 	bool dac_load_detect;
 	bool detected_by_load; /* if the connection status was determined by load */
-	uint16_t connector_object_id;
+	struct graphics_object_id connector_object_id;
+
 	struct amdgpu_hpd hpd;
 	struct amdgpu_router router;
 	struct amdgpu_i2c_chan *router_bus;
