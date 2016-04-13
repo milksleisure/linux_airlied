@@ -28,7 +28,6 @@
 #include "atom.h"
 
 #include "dc_bios_types.h"
-#include "include/grph_object_ctrl_defs.h"
 #include "include/bios_parser_interface.h"
 
 #include "command_table.h"
