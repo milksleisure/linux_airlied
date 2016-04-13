@@ -173,7 +173,7 @@ struct graphics_object_id dc_bios_get_encoder_id(struct dc_bios *dcb,
 						 uint32_t i)
 {
 	struct bios_parser *bp = BP_FROM_DCB(dcb);
-	struct graphics_object_id object_id = dal_graphics_object_id_init(
+	struct graphics_object_id object_id = display_graphics_object_id_init(
 		0, ENUM_ID_UNKNOWN, OBJECT_TYPE_UNKNOWN);
 
 	uint32_t encoder_table_offset = bp->object_info_tbl_offset
@@ -195,7 +195,7 @@ struct graphics_object_id dc_bios_get_connector_id(struct dc_bios *dcb,
 						   uint8_t i)
 {
 	struct bios_parser *bp = BP_FROM_DCB(dcb);
-	struct graphics_object_id object_id = dal_graphics_object_id_init(
+	struct graphics_object_id object_id = display_graphics_object_id_init(
 		0, ENUM_ID_UNKNOWN, OBJECT_TYPE_UNKNOWN);
 
 	uint32_t connector_table_offset = bp->object_info_tbl_offset
@@ -2073,7 +2073,7 @@ static ATOM_OBJECT *get_bios_object(struct bios_parser *bp,
 		return NULL;
 
 	for (i = 0; i < tbl->ucNumberOfObjects; i++)
-		if (dal_graphics_object_id_is_equal(id,
+		if (display_graphics_object_id_is_equal_unchecked(id,
 				object_id_from_bios_object_id(
 						le16_to_cpu(tbl->asObjects[i].usObjectID))))
 			return &tbl->asObjects[i];
@@ -2171,7 +2171,7 @@ static struct graphics_object_id object_id_from_bios_object_id(
 	if (ENUM_ID_UNKNOWN == enum_id)
 		return go_id;
 
-	go_id = dal_graphics_object_id_init(
+	go_id = display_graphics_object_id_init(
 			id_from_bios_object_id(type, bios_object_id), enum_id, type);
 
 	return go_id;
@@ -2970,7 +2970,7 @@ static enum bp_result patch_bios_image_from_ext_display_connection_info(
 	ATOM_OBJECT *opm_object = NULL;
 	uint32_t i = 0;
 	struct graphics_object_id opm_object_id =
-			dal_graphics_object_id_init(
+			display_graphics_object_id_init(
 					GENERIC_ID_MXM_OPM,
 					ENUM_ID_1,
 					OBJECT_TYPE_GENERIC);
