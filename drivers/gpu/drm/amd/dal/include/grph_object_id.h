@@ -36,8 +36,6 @@ bool dal_graphics_object_id_is_valid(
 bool dal_graphics_object_id_is_equal(
 	struct graphics_object_id id1,
 	struct graphics_object_id id2);
-uint32_t dal_graphics_object_id_to_uint(
-	struct graphics_object_id id);
 
 #define dal_graphics_object_id_get_controller_id display_graphics_object_id_get_controller_id
 #define dal_graphics_object_id_get_clock_source_id display_graphics_object_id_get_clock_source_id
@@ -45,4 +43,5 @@ uint32_t dal_graphics_object_id_to_uint(
 #define dal_graphics_object_id_get_connector_id display_graphics_object_id_get_connector_id
 #define dal_graphics_object_id_get_audio_id display_graphics_object_id_get_audio_id
 #define dal_graphics_object_id_get_engine_id display_graphics_object_id_get_engine_id
+#define dal_graphics_object_id_to_uint display_graphics_object_id_to_uint
 #endif

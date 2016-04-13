@@ -307,4 +307,14 @@ static inline enum engine_id display_graphics_object_id_get_engine_id(
 		return id.id;
 	return ENGINE_ID_UNKNOWN;
 }
+
+/* Based on internal data members memory layout */
+static inline uint32_t display_graphics_object_id_to_uint(struct graphics_object_id id)
+{
+	uint32_t object_id = 0;
+
+	object_id = id.id + (id.enum_id << 0x8) + (id.type << 0xc);
+	return object_id;
+}
+
 #endif
