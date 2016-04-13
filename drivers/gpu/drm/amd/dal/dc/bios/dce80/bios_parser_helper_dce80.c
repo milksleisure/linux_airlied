@@ -30,11 +30,7 @@
 #include "dce/dce_8_0_d.h"
 #include "bif/bif_4_1_d.h"
 
-#include "include/grph_object_id.h"
-#include "include/grph_object_defs.h"
-#include "include/grph_object_ctrl_defs.h"
 #include "include/bios_parser_types.h"
-#include "include/adapter_service_types.h"
 
 #include "../bios_parser_helper.h"
 

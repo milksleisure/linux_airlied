@@ -27,10 +27,7 @@
 
 #include "atom.h"
 
-#include "include/grph_object_id.h"
-#include "include/grph_object_defs.h"
 #include "include/bios_parser_types.h"
-#include "include/adapter_service_types.h"
 
 #include "../command_table_helper.h"
 

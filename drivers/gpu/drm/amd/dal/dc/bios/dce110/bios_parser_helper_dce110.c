@@ -28,9 +28,6 @@
 #include "atom.h"
 
 #include "include/bios_parser_types.h"
-#include "include/adapter_service_types.h"
-#include "include/logger_interface.h"
-
 #include "../bios_parser_helper.h"
 
 #include "dce/dce_11_0_d.h"
