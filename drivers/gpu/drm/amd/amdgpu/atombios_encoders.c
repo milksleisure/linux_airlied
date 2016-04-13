@@ -101,12 +101,12 @@ amdgpu_atombios_encoder_set_backlight_level(struct amdgpu_encoder *amdgpu_encode
 		case ENCODER_ID_INTERNAL_UNIPHY2:
 			if (dig->backlight_level == 0)
 				amdgpu_atombios_encoder_setup_dig_transmitter(encoder,
-								       ATOM_TRANSMITTER_ACTION_LCD_BLOFF, 0, 0);
+								       TRANSMITTER_CONTROL_BACKLIGHT_OFF, 0, 0);
 			else {
 				amdgpu_atombios_encoder_setup_dig_transmitter(encoder,
-								       ATOM_TRANSMITTER_ACTION_BL_BRIGHTNESS_CONTROL, 0, 0);
+								       TRANSMITTER_CONTROL_BACKLIGHT_BRIGHTNESS, 0, 0);
 				amdgpu_atombios_encoder_setup_dig_transmitter(encoder,
-								       ATOM_TRANSMITTER_ACTION_LCD_BLON, 0, 0);
+								       TRANSMITTER_CONTROL_BACKLIGHT_ON, 0, 0);
 			}
 			break;
 		default:
@@ -700,7 +700,7 @@ amdgpu_atombios_encoder_setup_dig_transmitter(struct drm_encoder *encoder, int a
 	int dig_encoder = dig->dig_encoder;
 	int hpd_id = AMDGPU_HPD_NONE;
 
-	if (action == ATOM_TRANSMITTER_ACTION_INIT) {
+	if (action == TRANSMITTER_CONTROL_INIT) {
 		connector = amdgpu_get_connector_for_encoder_init(encoder);
 		/* just needed to avoid bailing in the encoder check.  the encoder
 		 * isn't used for init
@@ -754,9 +754,9 @@ amdgpu_atombios_encoder_setup_dig_transmitter(struct drm_encoder *encoder, int a
 		switch (crev) {
 		case 1:
 			args.v1.ucAction = action;
-			if (action == ATOM_TRANSMITTER_ACTION_INIT) {
+			if (action == TRANSMITTER_CONTROL_INIT) {
 				args.v1.usInitInfo = cpu_to_le16(connector_object_id);
-			} else if (action == ATOM_TRANSMITTER_ACTION_SETUP_VSEMPH) {
+			} else if (action == TRANSMITTER_CONTROL_SET_VOLTAGE_AND_PREEMPASIS) {
 				args.v1.asMode.ucLaneSel = lane_num;
 				args.v1.asMode.ucLaneSet = lane_set;
 			} else {
@@ -811,9 +811,9 @@ amdgpu_atombios_encoder_setup_dig_transmitter(struct drm_encoder *encoder, int a
 			break;
 		case 2:
 			args.v2.ucAction = action;
-			if (action == ATOM_TRANSMITTER_ACTION_INIT) {
+			if (action == TRANSMITTER_CONTROL_INIT) {
 				args.v2.usInitInfo = cpu_to_le16(connector_object_id);
-			} else if (action == ATOM_TRANSMITTER_ACTION_SETUP_VSEMPH) {
+			} else if (action == TRANSMITTER_CONTROL_SET_VOLTAGE_AND_PREEMPASIS) {
 				args.v2.asMode.ucLaneSel = lane_num;
 				args.v2.asMode.ucLaneSet = lane_set;
 			} else {
@@ -853,9 +853,9 @@ amdgpu_atombios_encoder_setup_dig_transmitter(struct drm_encoder *encoder, int a
 			break;
 		case 3:
 			args.v3.ucAction = action;
-			if (action == ATOM_TRANSMITTER_ACTION_INIT) {
+			if (action == TRANSMITTER_CONTROL_INIT) {
 				args.v3.usInitInfo = cpu_to_le16(connector_object_id);
-			} else if (action == ATOM_TRANSMITTER_ACTION_SETUP_VSEMPH) {
+			} else if (action == TRANSMITTER_CONTROL_SET_VOLTAGE_AND_PREEMPASIS) {
 				args.v3.asMode.ucLaneSel = lane_num;
 				args.v3.asMode.ucLaneSet = lane_set;
 			} else {
@@ -912,9 +912,9 @@ amdgpu_atombios_encoder_setup_dig_transmitter(struct drm_encoder *encoder, int a
 			break;
 		case 4:
 			args.v4.ucAction = action;
-			if (action == ATOM_TRANSMITTER_ACTION_INIT) {
+			if (action == TRANSMITTER_CONTROL_INIT) {
 				args.v4.usInitInfo = cpu_to_le16(connector_object_id);
-			} else if (action == ATOM_TRANSMITTER_ACTION_SETUP_VSEMPH) {
+			} else if (action == TRANSMITTER_CONTROL_SET_VOLTAGE_AND_PREEMPASIS) {
 				args.v4.asMode.ucLaneSel = lane_num;
 				args.v4.asMode.ucLaneSet = lane_set;
 			} else {
@@ -1066,7 +1066,7 @@ amdgpu_atombios_encoder_setup_dig_transmitter(struct drm_encoder *encoder, int a
 			else
 				args.v6.ucLaneNum = 4;
 			args.v6.ucConnObjId = connector_object_id;
-			if (action == ATOM_TRANSMITTER_ACTION_SETUP_VSEMPH)
+			if (action == TRANSMITTER_CONTROL_SET_VOLTAGE_AND_PREEMPASIS)
 				args.v6.ucDPLaneSet = lane_set;
 			else
 				args.v6.ucDigMode = amdgpu_atombios_encoder_get_encoder_mode(encoder);
@@ -1104,8 +1104,8 @@ amdgpu_atombios_encoder_set_edp_panel_power(struct drm_connector *connector,
 	if (connector->connector_type != DRM_MODE_CONNECTOR_eDP)
 		goto done;
 
-	if ((action != ATOM_TRANSMITTER_ACTION_POWER_ON) &&
-	    (action != ATOM_TRANSMITTER_ACTION_POWER_OFF))
+	if ((action != TRANSMITTER_CONTROL_POWER_ON) &&
+	    (action != TRANSMITTER_CONTROL_POWER_OFF))
 		goto done;
 
 	if (!amdgpu_atom_parse_cmd_header(adev->mode_info.atom_context, index, &frev, &crev))
@@ -1118,7 +1118,7 @@ amdgpu_atombios_encoder_set_edp_panel_power(struct drm_connector *connector,
 	amdgpu_atom_execute_table(adev->mode_info.atom_context, index, (uint32_t *)&args);
 
 	/* wait for the panel to power up */
-	if (action == ATOM_TRANSMITTER_ACTION_POWER_ON) {
+	if (action == TRANSMITTER_CONTROL_POWER_ON) {
 		int i;
 
 		for (i = 0; i < 300; i++) {
@@ -1276,13 +1276,13 @@ amdgpu_atombios_encoder_setup_dig(struct drm_encoder *encoder, int action)
 		    connector) {
 			if (connector->connector_type == DRM_MODE_CONNECTOR_eDP) {
 				amdgpu_atombios_encoder_set_edp_panel_power(connector,
-								     ATOM_TRANSMITTER_ACTION_POWER_ON);
+								     TRANSMITTER_CONTROL_POWER_ON);
 				amdgpu_dig_connector->edp_on = true;
 			}
 		}
 		/* enable the transmitter */
 		amdgpu_atombios_encoder_setup_dig_transmitter(encoder,
-						       ATOM_TRANSMITTER_ACTION_ENABLE,
+						       TRANSMITTER_CONTROL_ENABLE,
 						       0, 0);
 		if (ENCODER_MODE_IS_DP(amdgpu_atombios_encoder_get_encoder_mode(encoder)) &&
 		    connector) {
@@ -1303,19 +1303,19 @@ amdgpu_atombios_encoder_setup_dig(struct drm_encoder *encoder, int action)
 			amdgpu_atombios_encoder_setup_external_encoder(encoder, ext_encoder, ATOM_DISABLE);
 		if (amdgpu_encoder->devices & (ATOM_DEVICE_LCD_SUPPORT))
 			amdgpu_atombios_encoder_setup_dig_transmitter(encoder,
-							       ATOM_TRANSMITTER_ACTION_LCD_BLOFF, 0, 0);
+							       TRANSMITTER_CONTROL_BACKLIGHT_OFF, 0, 0);
 
 		if (ENCODER_MODE_IS_DP(amdgpu_atombios_encoder_get_encoder_mode(encoder)) &&
 		    connector)
 			amdgpu_atombios_dp_set_rx_power_state(connector, DP_SET_POWER_D3);
 		/* disable the transmitter */
 		amdgpu_atombios_encoder_setup_dig_transmitter(encoder,
-						       ATOM_TRANSMITTER_ACTION_DISABLE, 0, 0);
+						       TRANSMITTER_CONTROL_DISABLE, 0, 0);
 		if (ENCODER_MODE_IS_DP(amdgpu_atombios_encoder_get_encoder_mode(encoder)) &&
 		    connector) {
 			if (connector->connector_type == DRM_MODE_CONNECTOR_eDP) {
 				amdgpu_atombios_encoder_set_edp_panel_power(connector,
-								     ATOM_TRANSMITTER_ACTION_POWER_OFF);
+								     TRANSMITTER_CONTROL_POWER_OFF);
 				amdgpu_dig_connector->edp_on = false;
 			}
 		}
@@ -1584,7 +1584,7 @@ amdgpu_atombios_encoder_init_dig(struct amdgpu_device *adev)
 		case ENCODER_ID_INTERNAL_UNIPHY1:
 		case ENCODER_ID_INTERNAL_UNIPHY2:
 		case ENCODER_ID_INTERNAL_UNIPHY3:
-			amdgpu_atombios_encoder_setup_dig_transmitter(encoder, ATOM_TRANSMITTER_ACTION_INIT,
+			amdgpu_atombios_encoder_setup_dig_transmitter(encoder, TRANSMITTER_CONTROL_INIT,
 							       0, 0);
 			break;
 		}

@@ -302,6 +302,115 @@ union adjust_pixel_clock {
 	ADJUST_DISPLAY_PLL_PS_ALLOCATION_V3 v3;
 };
 
+static enum signal_type encoder_mode_to_signal_type(int encoder_mode, bool is_duallink)
+{
+	switch (encoder_mode) {
+	case ATOM_ENCODER_MODE_DVI:
+		return (is_duallink ? SIGNAL_TYPE_DVI_DUAL_LINK : SIGNAL_TYPE_DVI_SINGLE_LINK);
+	case ATOM_ENCODER_MODE_HDMI:
+		return SIGNAL_TYPE_HDMI_TYPE_A;
+	case ATOM_ENCODER_MODE_LVDS:
+		return SIGNAL_TYPE_LVDS;
+	case ATOM_ENCODER_MODE_DP:
+		return SIGNAL_TYPE_DISPLAY_PORT;
+	case ATOM_ENCODER_MODE_CRT:
+	default:
+		return SIGNAL_TYPE_RGB;
+	}
+}
+
+#if 1
+static u32 amdgpu_atombios_crtc_adjust_pll(struct drm_crtc *crtc,
+					      struct drm_display_mode *mode)
+{
+	struct amdgpu_crtc *amdgpu_crtc = to_amdgpu_crtc(crtc);
+	struct drm_device *dev = crtc->dev;
+	struct amdgpu_device *adev = dev->dev_private;
+	struct drm_encoder *encoder = amdgpu_crtc->encoder;
+	struct amdgpu_encoder *amdgpu_encoder = to_amdgpu_encoder(encoder);
+	struct drm_connector *connector = amdgpu_get_connector_for_encoder(encoder);
+	int encoder_mode = amdgpu_atombios_encoder_get_encoder_mode(encoder);
+	struct bp_adjust_pixel_clock_parameters args = {0};
+	u32 clock = mode->clock;
+	u32 dp_clock = mode->clock;
+	int bpc = amdgpu_crtc->bpc;
+	bool is_duallink = amdgpu_dig_monitor_is_duallink(encoder, mode->clock);
+	u32 adjusted_clock = mode->clock;
+
+	args.signal_type = encoder_mode_to_signal_type(encoder_mode, is_duallink);
+	
+	amdgpu_crtc->pll_flags = AMDGPU_PLL_USE_FRAC_FB_DIV;
+
+	if ((amdgpu_encoder->devices & (ATOM_DEVICE_LCD_SUPPORT | ATOM_DEVICE_DFP_SUPPORT)) ||
+	    (amdgpu_encoder_get_dp_bridge_encoder_id(encoder) != ENCODER_ID_UNKNOWN)) {
+		if (connector) {
+			struct amdgpu_connector *amdgpu_connector = to_amdgpu_connector(connector);
+			struct amdgpu_connector_atom_dig *dig_connector =
+				amdgpu_connector->con_priv;
+
+			dp_clock = dig_connector->dp_clock;
+		}
+	}
+
+	/* use recommended ref_div for ss */
+	if (amdgpu_encoder->devices & (ATOM_DEVICE_LCD_SUPPORT)) {
+		if (amdgpu_crtc->ss_enabled) {
+			if (amdgpu_crtc->ss.refdiv) {
+				amdgpu_crtc->pll_flags |= AMDGPU_PLL_USE_REF_DIV;
+				amdgpu_crtc->pll_reference_div = amdgpu_crtc->ss.refdiv;
+				amdgpu_crtc->pll_flags |= AMDGPU_PLL_USE_FRAC_FB_DIV;
+			}
+		}
+
+	}
+	if (amdgpu_encoder->active_device & (ATOM_DEVICE_TV_SUPPORT))
+		amdgpu_crtc->pll_flags |= AMDGPU_PLL_PREFER_CLOSEST_LOWER;
+	if (amdgpu_encoder->devices & (ATOM_DEVICE_LCD_SUPPORT))
+		amdgpu_crtc->pll_flags |= AMDGPU_PLL_IS_LCD;
+	/* adjust pll for deep color modes */
+	if (encoder_mode == ATOM_ENCODER_MODE_HDMI) {
+		switch (bpc) {
+		case 8:
+		default:
+			break;
+		case 10:
+			clock = (clock * 5) / 4;
+			break;
+		case 12:
+			clock = (clock * 3) / 2;
+			break;
+		case 16:
+			clock = clock * 2;
+			break;
+		}
+	}
+	if (amdgpu_crtc->ss_enabled && amdgpu_crtc->ss.percentage)
+		args.ss_enable = true;
+
+	if (ENCODER_MODE_IS_DP(encoder_mode))
+		args.pixel_clock = dp_clock;
+	else
+		args.pixel_clock = clock;
+
+	args.encoder_object_id = amdgpu_encoder->encoder_object_id;
+
+	dc_bios_adjust_pixel_clock(adev->dcb, &args);
+
+	adjusted_clock = args.adjusted_pixel_clock;
+
+	if (args.reference_divider) {
+		amdgpu_crtc->pll_flags |= AMDGPU_PLL_USE_FRAC_FB_DIV;
+		amdgpu_crtc->pll_flags |= AMDGPU_PLL_USE_REF_DIV;
+		amdgpu_crtc->pll_reference_div = args.reference_divider;
+	}
+	if (args.pixel_clock_post_divider) {
+		amdgpu_crtc->pll_flags |= AMDGPU_PLL_USE_FRAC_FB_DIV;
+		amdgpu_crtc->pll_flags |= AMDGPU_PLL_USE_POST_DIV;
+		amdgpu_crtc->pll_post_div = args.pixel_clock_post_divider;
+	}
+	return adjusted_clock;
+}
+#else
 static u32 amdgpu_atombios_crtc_adjust_pll(struct drm_crtc *crtc,
 				    struct drm_display_mode *mode)
 {
@@ -451,7 +560,7 @@ static u32 amdgpu_atombios_crtc_adjust_pll(struct drm_crtc *crtc,
 
 	return adjusted_clock;
 }
-
+#endif
 union set_pixel_clock {
 	SET_PIXEL_CLOCK_PS_ALLOCATION base;
 	PIXEL_CLOCK_PARAMETERS v1;

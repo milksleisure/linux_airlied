@@ -57,7 +57,7 @@
 #include "amd_powerplay.h"
 
 #include "gpu_scheduler.h"
-
+#include "dc_bios_types.h"
 /*
  * Modules parameters.
  */
@@ -1949,6 +1949,8 @@ struct amdgpu_device {
 	bool				is_atom_bios;
 	struct amdgpu_bo		*stollen_vga_memory;
 	uint32_t			bios_scratch[AMDGPU_BIOS_NUM_SCRATCH];
+	struct dc_bios                  *dcb;
+	struct cgs_device               *bios_cgs;
 
 	/* Register/doorbell mmio */
 	resource_size_t			rmmio_base;
