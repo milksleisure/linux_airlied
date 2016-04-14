@@ -310,3 +310,40 @@ uint8_t amdgpu_encoder_object_to_atom(struct graphics_object_id object_id)
 	enum encoder_id enc_id = display_graphics_object_id_get_encoder_id(object_id);
 	return amdgpu_encoder_id_to_atom(enc_id);
 }
+
+bool amdgpu_engine_id_to_atom_encoder(enum engine_id engine, uint8_t *atom_encoder_id)
+{
+	uint8_t encoder_id = 0;
+	switch (engine) {
+	case ENGINE_ID_DIGA:
+		encoder_id = ASIC_INT_DIG1_ENCODER_ID;
+		break;
+	case ENGINE_ID_DIGB:
+		encoder_id = ASIC_INT_DIG2_ENCODER_ID;
+		break;
+	case ENGINE_ID_DIGC:
+		encoder_id = ASIC_INT_DIG3_ENCODER_ID;
+		break;
+	case ENGINE_ID_DIGD:
+		encoder_id = ASIC_INT_DIG4_ENCODER_ID;
+		break;
+	case ENGINE_ID_DIGE:
+		encoder_id = ASIC_INT_DIG5_ENCODER_ID;
+		break;
+	case ENGINE_ID_DIGF:
+		encoder_id = ASIC_INT_DIG6_ENCODER_ID;
+		break;
+	case ENGINE_ID_DIGG:
+		encoder_id = ASIC_INT_DIG7_ENCODER_ID;
+		break;
+	case ENCODER_ID_INTERNAL_KLDSCP_DAC1:
+		encoder_id = ASIC_INT_DAC1_ENCODER_ID;
+		break;
+	case ENCODER_ID_INTERNAL_KLDSCP_DAC2:
+		encoder_id = ASIC_INT_DAC2_ENCODER_ID;
+	default:
+		return false;
+	}
+	*atom_encoder_id = encoder_id;
+	return true;
+}

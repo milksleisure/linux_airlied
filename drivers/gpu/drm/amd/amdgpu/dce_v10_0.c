@@ -2385,7 +2385,7 @@ static void dce_v10_0_crtc_load_lut(struct drm_crtc *crtc)
 	WREG32(mmALPHA_CONTROL + amdgpu_crtc->crtc_offset, tmp);
 }
 
-static int dce_v10_0_pick_dig_encoder(struct drm_encoder *encoder)
+static enum engine_id dce_v10_0_pick_engine(struct drm_encoder *encoder)
 {
 	struct amdgpu_encoder *amdgpu_encoder = to_amdgpu_encoder(encoder);
 	struct amdgpu_encoder_atom_dig *dig = amdgpu_encoder->enc_priv;
@@ -2394,24 +2394,29 @@ static int dce_v10_0_pick_dig_encoder(struct drm_encoder *encoder)
 	switch (enc_id) {
 	case ENCODER_ID_INTERNAL_UNIPHY:
 		if (dig->linkb)
-			return 1;
+			return ENGINE_ID_DIGB;
 		else
-			return 0;
+			return ENGINE_ID_DIGA;
 		break;
 	case ENCODER_ID_INTERNAL_UNIPHY1:
 		if (dig->linkb)
-			return 3;
+			return ENGINE_ID_DIGD;
 		else
-			return 2; break;
+			return ENGINE_ID_DIGC;
+		break;
 	case ENCODER_ID_INTERNAL_UNIPHY2:
 		if (dig->linkb)
-			return 5;
+			return ENGINE_ID_DIGF;
 		else
-			return 4;
+			return ENGINE_ID_DIGE;
 		break;
 	case ENCODER_ID_INTERNAL_UNIPHY3:
-		return 6;
+		return ENGINE_ID_DIGG;
 		break;
+	case ENCODER_ID_INTERNAL_KLDSCP_DAC1:
+		return ENGINE_ID_DACA;
+	case ENCODER_ID_INTERNAL_KLDSCP_DAC2:
+		return ENGINE_ID_DACB;
 	default:
 		DRM_ERROR("invalid encoder_id: 0x%x\n", amdgpu_encoder->encoder_object_id.id);
 		return 0;
@@ -3546,15 +3551,15 @@ static void dce_v10_0_encoder_prepare(struct drm_encoder *encoder)
 	struct amdgpu_encoder *amdgpu_encoder = to_amdgpu_encoder(encoder);
 	struct drm_connector *connector = amdgpu_get_connector_for_encoder(encoder);
 
+	amdgpu_encoder->engine_id = dce_v10_0_pick_engine(encoder);
 	if ((amdgpu_encoder->active_device &
 	     (ATOM_DEVICE_DFP_SUPPORT | ATOM_DEVICE_LCD_SUPPORT)) ||
 	    (amdgpu_encoder_get_dp_bridge_encoder_id(encoder) !=
 	     ENCODER_ID_UNKNOWN)) {
 		struct amdgpu_encoder_atom_dig *dig = amdgpu_encoder->enc_priv;
 		if (dig) {
-			dig->dig_encoder = dce_v10_0_pick_dig_encoder(encoder);
 			if (amdgpu_encoder->active_device & ATOM_DEVICE_DFP_SUPPORT)
-				dig->afmt = adev->mode_info.afmt[dig->dig_encoder];
+				dig->afmt = adev->mode_info.afmt[amdgpu_encoder->engine_id];
 		}
 	}
 
@@ -3592,16 +3597,14 @@ static void dce_v10_0_encoder_commit(struct drm_encoder *encoder)
 static void dce_v10_0_encoder_disable(struct drm_encoder *encoder)
 {
 	struct amdgpu_encoder *amdgpu_encoder = to_amdgpu_encoder(encoder);
-	struct amdgpu_encoder_atom_dig *dig;
 
 	amdgpu_atombios_encoder_dpms(encoder, DRM_MODE_DPMS_OFF);
 
 	if (amdgpu_atombios_encoder_is_digital(encoder)) {
 		if (amdgpu_atombios_encoder_get_encoder_mode(encoder) == ATOM_ENCODER_MODE_HDMI)
 			dce_v10_0_afmt_enable(encoder, false);
-		dig = amdgpu_encoder->enc_priv;
-		dig->dig_encoder = -1;
 	}
+	amdgpu_encoder->engine_id = ENGINE_ID_UNKNOWN;
 	amdgpu_encoder->active_device = 0;
 }
 
@@ -3727,6 +3730,7 @@ static void dce_v10_0_encoder_add(struct amdgpu_device *adev,
 	amdgpu_encoder->underscan_type = UNDERSCAN_OFF;
 	amdgpu_encoder->is_ext_encoder = false;
 	amdgpu_encoder->caps = caps;
+	amdgpu_encoder->engine_id = ENGINE_ID_UNKNOWN;
 
 	switch (encoder_object_id.id) {
 	case ENCODER_ID_INTERNAL_KLDSCP_DAC1:

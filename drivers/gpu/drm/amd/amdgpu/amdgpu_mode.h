@@ -416,7 +416,6 @@ struct amdgpu_encoder_atom_dig {
 	bool linkb;
 	/* atom dig */
 	bool coherent_mode;
-	int dig_encoder; /* -1 disabled, 0 DIGA, 1 DIGB, etc. */
 	/* atom lvds/edp */
 	uint32_t lcd_misc;
 	uint16_t panel_pwr_delay;
@@ -446,6 +445,7 @@ struct amdgpu_encoder {
 	int audio_polling_active;
 	bool is_ext_encoder;
 	u16 caps;
+	enum engine_id engine_id; /* -1 disabled, 0 DIGA, 1 DIGB, etc. */
 };
 
 struct amdgpu_connector_atom_dig {
@@ -596,4 +596,5 @@ extern const struct drm_mode_config_funcs amdgpu_mode_funcs;
 struct graphics_object_id amdgpu_object_id_from_bios_object_id(uint32_t bios_object_id);
 uint8_t amdgpu_encoder_object_to_atom(struct graphics_object_id object_id);
 uint8_t amdgpu_encoder_id_to_atom(enum encoder_id id);
+bool amdgpu_engine_id_to_atom_encoder(enum engine_id engine, uint8_t *atom_encoder_id);
 #endif
