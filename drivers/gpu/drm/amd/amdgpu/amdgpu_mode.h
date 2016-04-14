@@ -368,7 +368,7 @@ struct amdgpu_atom_ss {
 
 struct amdgpu_crtc {
 	struct drm_crtc base;
-	int crtc_id;
+	struct graphics_object_id crtc_object_id;
 	u16 lut_r[256], lut_g[256], lut_b[256];
 	bool enabled;
 	bool can_tile;

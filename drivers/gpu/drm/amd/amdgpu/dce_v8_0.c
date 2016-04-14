@@ -747,7 +747,7 @@ static u32 dce_v8_0_line_buffer_adjust(struct amdgpu_device *adev,
 				       struct drm_display_mode *mode)
 {
 	u32 tmp, buffer_alloc, i;
-	u32 pipe_offset = amdgpu_crtc->crtc_id * 0x8;
+	u32 pipe_offset = amdgpu_crtc->crtc_object_id.id * 0x8;
 	/*
 	 * Line Buffer Setup
 	 * There are 6 line buffers, one for each display controllers.
@@ -1716,7 +1716,7 @@ static void dce_v8_0_audio_set_dto(struct drm_encoder *encoder, u32 clock)
 	 * number (coefficient of two integer numbers.  DCCG_AUDIO_DTOx_PHASE
 	 * is the numerator, DCCG_AUDIO_DTOx_MODULE is the denominator
 	 */
-	WREG32(mmDCCG_AUDIO_DTO_SOURCE, (amdgpu_crtc->crtc_id << DCCG_AUDIO_DTO_SOURCE__DCCG_AUDIO_DTO0_SOURCE_SEL__SHIFT));
+	WREG32(mmDCCG_AUDIO_DTO_SOURCE, (amdgpu_crtc->crtc_object_id.id << DCCG_AUDIO_DTO_SOURCE__DCCG_AUDIO_DTO0_SOURCE_SEL__SHIFT));
 	WREG32(mmDCCG_AUDIO_DTO0_PHASE, dto_phase);
 	WREG32(mmDCCG_AUDIO_DTO0_MODULE, dto_modulo);
 }
@@ -1965,12 +1965,13 @@ static void dce_v8_0_vga_enable(struct drm_crtc *crtc, bool enable)
 	struct drm_device *dev = crtc->dev;
 	struct amdgpu_device *adev = dev->dev_private;
 	u32 vga_control;
+	enum controller_id controller_id = display_graphics_object_id_get_controller_id(amdgpu_crtc->crtc_object_id);
 
-	vga_control = RREG32(vga_control_regs[amdgpu_crtc->crtc_id]) & ~1;
+	vga_control = RREG32(vga_control_regs[controller_id]) & ~1;
 	if (enable)
-		WREG32(vga_control_regs[amdgpu_crtc->crtc_id], vga_control | 1);
+		WREG32(vga_control_regs[controller_id], vga_control | 1);
 	else
-		WREG32(vga_control_regs[amdgpu_crtc->crtc_id], vga_control);
+		WREG32(vga_control_regs[controller_id], vga_control);
 }
 
 static void dce_v8_0_grph_enable(struct drm_crtc *crtc, bool enable)
@@ -2229,7 +2230,7 @@ static void dce_v8_0_crtc_load_lut(struct drm_crtc *crtc)
 	struct amdgpu_device *adev = dev->dev_private;
 	int i;
 
-	DRM_DEBUG_KMS("%d\n", amdgpu_crtc->crtc_id);
+	DRM_DEBUG_KMS("%d\n", amdgpu_crtc->crtc_object_id.id);
 
 	WREG32(mmINPUT_CSC_CONTROL + amdgpu_crtc->crtc_offset,
 	       ((INPUT_CSC_BYPASS << INPUT_CSC_CONTROL__INPUT_CSC_GRPH_MODE__SHIFT) |
@@ -2502,7 +2503,7 @@ static int dce_v8_0_crtc_cursor_set2(struct drm_crtc *crtc,
 
 	obj = drm_gem_object_lookup(crtc->dev, file_priv, handle);
 	if (!obj) {
-		DRM_ERROR("Cannot find cursor object %x for crtc %d\n", handle, amdgpu_crtc->crtc_id);
+		DRM_ERROR("Cannot find cursor object %x for crtc %d\n", handle, amdgpu_crtc->crtc_object_id.id);
 		return -ENOENT;
 	}
 
@@ -2620,16 +2621,16 @@ static void dce_v8_0_crtc_dpms(struct drm_crtc *crtc, int mode)
 		amdgpu_atombios_crtc_blank(crtc, ATOM_DISABLE);
 		dce_v8_0_vga_enable(crtc, false);
 		/* Make sure VBLANK and PFLIP interrupts are still enabled */
-		type = amdgpu_crtc_idx_to_irq_type(adev, amdgpu_crtc->crtc_id);
+		type = amdgpu_crtc_idx_to_irq_type(adev, amdgpu_crtc->crtc_object_id.id);
 		amdgpu_irq_update(adev, &adev->crtc_irq, type);
 		amdgpu_irq_update(adev, &adev->pageflip_irq, type);
-		drm_vblank_on(dev, amdgpu_crtc->crtc_id);
+		drm_vblank_on(dev, amdgpu_crtc->crtc_object_id.id);
 		dce_v8_0_crtc_load_lut(crtc);
 		break;
 	case DRM_MODE_DPMS_STANDBY:
 	case DRM_MODE_DPMS_SUSPEND:
 	case DRM_MODE_DPMS_OFF:
-		drm_vblank_off(dev, amdgpu_crtc->crtc_id);
+		drm_vblank_off(dev, amdgpu_crtc->crtc_object_id.id);
 		if (amdgpu_crtc->enabled) {
 			dce_v8_0_vga_enable(crtc, true);
 			amdgpu_atombios_crtc_blank(crtc, ATOM_ENABLE);
@@ -2689,7 +2690,7 @@ static void dce_v8_0_crtc_disable(struct drm_crtc *crtc)
 	for (i = 0; i < adev->mode_info.num_crtc; i++) {
 		if (adev->mode_info.crtcs[i] &&
 		    adev->mode_info.crtcs[i]->enabled &&
-		    i != amdgpu_crtc->crtc_id &&
+		    i != amdgpu_crtc->crtc_object_id.id &&
 		    amdgpu_crtc->pll_id == adev->mode_info.crtcs[i]->pll_id) {
 			/* one other crtc is using this pll don't turn
 			 * off the pll
@@ -2702,7 +2703,7 @@ static void dce_v8_0_crtc_disable(struct drm_crtc *crtc)
 	case ATOM_PPLL1:
 	case ATOM_PPLL2:
 		/* disable the ppll */
-		amdgpu_atombios_crtc_program_pll(crtc, amdgpu_crtc->crtc_id, amdgpu_crtc->pll_id,
+		amdgpu_atombios_crtc_program_pll(crtc, amdgpu_crtc->crtc_object_id, amdgpu_crtc->pll_id,
 						 0, DISPLAY_NO_OBJECT, ATOM_DISABLE, 0, 0, 0, 0, 0, false, &ss);
 		break;
 	case ATOM_PPLL0:
@@ -2710,7 +2711,7 @@ static void dce_v8_0_crtc_disable(struct drm_crtc *crtc)
 		if ((adev->asic_type == CHIP_KAVERI) ||
 		    (adev->asic_type == CHIP_BONAIRE) ||
 		    (adev->asic_type == CHIP_HAWAII))
-			amdgpu_atombios_crtc_program_pll(crtc, amdgpu_crtc->crtc_id, amdgpu_crtc->pll_id,
+			amdgpu_atombios_crtc_program_pll(crtc, amdgpu_crtc->crtc_object_id, amdgpu_crtc->pll_id,
 							 0, DISPLAY_NO_OBJECT, ATOM_DISABLE, 0, 0, 0, 0, 0, false, &ss);
 		break;
 	default:
@@ -2818,7 +2819,7 @@ static int dce_v8_0_crtc_init(struct amdgpu_device *adev, int index)
 	drm_crtc_init(adev->ddev, &amdgpu_crtc->base, &dce_v8_0_crtc_funcs);
 
 	drm_mode_crtc_set_gamma_size(&amdgpu_crtc->base, 256);
-	amdgpu_crtc->crtc_id = index;
+	amdgpu_crtc->crtc_object_id = display_graphics_object_id_init(index, ENUM_ID_UNKNOWN, OBJECT_TYPE_CONTROLLER);
 	adev->mode_info.crtcs[index] = amdgpu_crtc;
 
 	amdgpu_crtc->max_cursor_width = CIK_CURSOR_WIDTH;
@@ -2832,7 +2833,7 @@ static int dce_v8_0_crtc_init(struct amdgpu_device *adev, int index)
 		amdgpu_crtc->lut_b[i] = i << 2;
 	}
 
-	amdgpu_crtc->crtc_offset = crtc_offsets[amdgpu_crtc->crtc_id];
+	amdgpu_crtc->crtc_offset = crtc_offsets[amdgpu_crtc->crtc_object_id.id];
 
 	amdgpu_crtc->pll_id = ATOM_PPLL_INVALID;
 	amdgpu_crtc->adjusted_clock = 0;
@@ -3384,7 +3385,7 @@ static int dce_v8_0_pageflip_irq(struct amdgpu_device *adev,
 
 	spin_unlock_irqrestore(&adev->ddev->event_lock, flags);
 
-	drm_vblank_put(adev->ddev, amdgpu_crtc->crtc_id);
+	drm_vblank_put(adev->ddev, amdgpu_crtc->crtc_object_id.id);
 	schedule_work(&works->unpin_work);
 
 	return 0;

@@ -140,7 +140,7 @@ static void amdgpu_flip_work_func(struct work_struct *__work)
 
 
 	DRM_DEBUG_DRIVER("crtc:%d[%p], pflip_stat:AMDGPU_FLIP_SUBMITTED, work: %p,\n",
-					 amdgpuCrtc->crtc_id, amdgpuCrtc, work);
+					 amdgpuCrtc->crtc_object_id.id, amdgpuCrtc, work);
 
 }
 
@@ -196,7 +196,7 @@ int amdgpu_crtc_page_flip(struct drm_crtc *crtc,
 
 	work->event = event;
 	work->adev = adev;
-	work->crtc_id = amdgpu_crtc->crtc_id;
+	work->crtc_id = amdgpu_crtc->crtc_object_id.id;
 
 	/* schedule unpin of the old buffer */
 	old_amdgpu_fb = to_amdgpu_framebuffer(crtc->primary->fb);
@@ -239,7 +239,7 @@ int amdgpu_crtc_page_flip(struct drm_crtc *crtc,
 
 	work->base = base;
 
-	r = drm_vblank_get(crtc->dev, amdgpu_crtc->crtc_id);
+	r = drm_vblank_get(crtc->dev, amdgpu_crtc->crtc_object_id.id);
 	if (r) {
 		DRM_ERROR("failed to get vblank before flip\n");
 		goto pflip_cleanup;
@@ -259,7 +259,7 @@ int amdgpu_crtc_page_flip(struct drm_crtc *crtc,
 
 
 	DRM_DEBUG_DRIVER("crtc:%d[%p], pflip_stat:AMDGPU_FLIP_PENDING, work: %p,\n",
-					 amdgpu_crtc->crtc_id, amdgpu_crtc, work);
+					 amdgpu_crtc->crtc_object_id.id, amdgpu_crtc, work);
 	/* update crtc fb */
 	crtc->primary->fb = fb;
 	spin_unlock_irqrestore(&crtc->dev->event_lock, flags);
@@ -267,7 +267,7 @@ int amdgpu_crtc_page_flip(struct drm_crtc *crtc,
 	return 0;
 
 vblank_cleanup:
-	drm_vblank_put(crtc->dev, amdgpu_crtc->crtc_id);
+	drm_vblank_put(crtc->dev, amdgpu_crtc->crtc_object_id.id);
 
 pflip_cleanup:
 	if (unlikely(amdgpu_bo_reserve(new_rbo, false) != 0)) {

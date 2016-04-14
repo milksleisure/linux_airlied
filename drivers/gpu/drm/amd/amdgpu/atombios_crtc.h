@@ -38,7 +38,7 @@ void amdgpu_atombios_crtc_set_dtd_timing(struct drm_crtc *crtc,
 void amdgpu_atombios_crtc_set_disp_eng_pll(struct amdgpu_device *adev,
 				    u32 dispclk);
 void amdgpu_atombios_crtc_program_pll(struct drm_crtc *crtc,
-			       u32 crtc_id,
+			       struct graphics_object_id crtc_object_id,
 			       int pll_id,
 			       u32 encoder_mode,
 			       struct graphics_object_id encoder_object_id,

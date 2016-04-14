@@ -1307,7 +1307,7 @@ amdgpu_atombios_encoder_set_crtc_source(struct drm_encoder *encoder)
 	uint8_t frev, crev;
 	struct amdgpu_encoder_atom_dig *dig;
 	enum encoder_id enc_id = display_graphics_object_id_get_encoder_id(amdgpu_encoder->encoder_object_id);
-
+	enum controller_id controller_id = display_graphics_object_id_get_controller_id(amdgpu_crtc->crtc_object_id);
 	memset(&args, 0, sizeof(args));
 
 	if (!amdgpu_atom_parse_cmd_header(adev->mode_info.atom_context, index, &frev, &crev))
@@ -1318,7 +1318,7 @@ amdgpu_atombios_encoder_set_crtc_source(struct drm_encoder *encoder)
 		switch (crev) {
 		case 1:
 		default:
-			args.v1.ucCRTC = amdgpu_crtc->crtc_id;
+			args.v1.ucCRTC = controller_id;
 			switch (enc_id) {
 			case ENCODER_ID_INTERNAL_TMDS1:
 			case ENCODER_ID_INTERNAL_KLDSCP_TMDS1:
@@ -1357,7 +1357,7 @@ amdgpu_atombios_encoder_set_crtc_source(struct drm_encoder *encoder)
 			}
 			break;
 		case 2:
-			args.v2.ucCRTC = amdgpu_crtc->crtc_id;
+			args.v2.ucCRTC = controller_id;
 			if (amdgpu_encoder_get_dp_bridge_encoder_id(encoder) != ENCODER_ID_UNKNOWN) {
 				struct drm_connector *connector = amdgpu_get_connector_for_encoder(encoder);
 
@@ -1424,7 +1424,7 @@ amdgpu_atombios_encoder_set_crtc_source(struct drm_encoder *encoder)
 			}
 			break;
 		case 3:
-			args.v3.ucCRTC = amdgpu_crtc->crtc_id;
+			args.v3.ucCRTC = controller_id;
 			if (amdgpu_encoder_get_dp_bridge_encoder_id(encoder) != ENCODER_ID_UNKNOWN) {
 				struct drm_connector *connector = amdgpu_get_connector_for_encoder(encoder);
 
