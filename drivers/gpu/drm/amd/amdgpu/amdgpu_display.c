@@ -341,38 +341,22 @@ static const char *encoder_names[38] = {
 	"INTERNAL_TMDS2",
 	"INTERNAL_DAC1",
 	"INTERNAL_DAC2",
-	"INTERNAL_SDVOA",
-	"INTERNAL_SDVOB",
-	"SI170B",
-	"CH7303",
-	"CH7301",
-	"INTERNAL_DVO1",
-	"EXTERNAL_SDVOA",
-	"EXTERNAL_SDVOB",
-	"TITFP513",
 	"INTERNAL_LVTM1",
-	"VT1623",
-	"HDMI_SI1930",
-	"HDMI_INTERNAL",
+	"INTERNAL_HDMI",
 	"INTERNAL_KLDSCP_TMDS1",
-	"INTERNAL_KLDSCP_DVO1",
 	"INTERNAL_KLDSCP_DAC1",
 	"INTERNAL_KLDSCP_DAC2",
-	"SI178",
 	"MVPU_FPGA",
 	"INTERNAL_DDI",
-	"VT1625",
-	"HDMI_SI1932",
-	"DP_AN9801",
-	"DP_DP501",
 	"INTERNAL_UNIPHY",
 	"INTERNAL_KLDSCP_LVTMA",
 	"INTERNAL_UNIPHY1",
 	"INTERNAL_UNIPHY2",
 	"NUTMEG",
 	"TRAVIS",
-	"INTERNAL_VCE",
+	"INTERNAL_WIRELESS",
 	"INTERNAL_UNIPHY3",
+	"INTERNAL_VIRTUAL",
 };
 
 static const char *hpd_names[6] = {
@@ -429,31 +413,33 @@ void amdgpu_print_display_setup(struct drm_device *dev)
 		}
 		DRM_INFO("  Encoders:\n");
 		list_for_each_entry(encoder, &dev->mode_config.encoder_list, head) {
+			enum encoder_id enc_id;
 			amdgpu_encoder = to_amdgpu_encoder(encoder);
 			devices = amdgpu_encoder->devices & amdgpu_connector->devices;
+			enc_id = display_graphics_object_id_get_encoder_id(amdgpu_encoder->encoder_object_id);
 			if (devices) {
 				if (devices & ATOM_DEVICE_CRT1_SUPPORT)
-					DRM_INFO("    CRT1: %s\n", encoder_names[amdgpu_encoder->encoder_id]);
+					DRM_INFO("    CRT1: %s\n", encoder_names[enc_id]);
 				if (devices & ATOM_DEVICE_CRT2_SUPPORT)
-					DRM_INFO("    CRT2: %s\n", encoder_names[amdgpu_encoder->encoder_id]);
+					DRM_INFO("    CRT2: %s\n", encoder_names[enc_id]);
 				if (devices & ATOM_DEVICE_LCD1_SUPPORT)
-					DRM_INFO("    LCD1: %s\n", encoder_names[amdgpu_encoder->encoder_id]);
+					DRM_INFO("    LCD1: %s\n", encoder_names[enc_id]);
 				if (devices & ATOM_DEVICE_DFP1_SUPPORT)
-					DRM_INFO("    DFP1: %s\n", encoder_names[amdgpu_encoder->encoder_id]);
+					DRM_INFO("    DFP1: %s\n", encoder_names[enc_id]);
 				if (devices & ATOM_DEVICE_DFP2_SUPPORT)
-					DRM_INFO("    DFP2: %s\n", encoder_names[amdgpu_encoder->encoder_id]);
+					DRM_INFO("    DFP2: %s\n", encoder_names[enc_id]);
 				if (devices & ATOM_DEVICE_DFP3_SUPPORT)
-					DRM_INFO("    DFP3: %s\n", encoder_names[amdgpu_encoder->encoder_id]);
+					DRM_INFO("    DFP3: %s\n", encoder_names[enc_id]);
 				if (devices & ATOM_DEVICE_DFP4_SUPPORT)
-					DRM_INFO("    DFP4: %s\n", encoder_names[amdgpu_encoder->encoder_id]);
+					DRM_INFO("    DFP4: %s\n", encoder_names[enc_id]);
 				if (devices & ATOM_DEVICE_DFP5_SUPPORT)
-					DRM_INFO("    DFP5: %s\n", encoder_names[amdgpu_encoder->encoder_id]);
+					DRM_INFO("    DFP5: %s\n", encoder_names[enc_id]);
 				if (devices & ATOM_DEVICE_DFP6_SUPPORT)
-					DRM_INFO("    DFP6: %s\n", encoder_names[amdgpu_encoder->encoder_id]);
+					DRM_INFO("    DFP6: %s\n", encoder_names[enc_id]);
 				if (devices & ATOM_DEVICE_TV1_SUPPORT)
-					DRM_INFO("    TV1: %s\n", encoder_names[amdgpu_encoder->encoder_id]);
+					DRM_INFO("    TV1: %s\n", encoder_names[enc_id]);
 				if (devices & ATOM_DEVICE_CV_SUPPORT)
-					DRM_INFO("    CV: %s\n", encoder_names[amdgpu_encoder->encoder_id]);
+					DRM_INFO("    CV: %s\n", encoder_names[enc_id]);
 			}
 		}
 		i++;

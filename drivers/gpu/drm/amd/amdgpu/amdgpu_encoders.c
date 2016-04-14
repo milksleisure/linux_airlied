@@ -132,16 +132,16 @@ u16 amdgpu_encoder_get_dp_bridge_encoder_id(struct drm_encoder *encoder)
 
 	if (other_encoder) {
 		struct amdgpu_encoder *amdgpu_encoder = to_amdgpu_encoder(other_encoder);
-
-		switch (amdgpu_encoder->encoder_id) {
-		case ENCODER_OBJECT_ID_TRAVIS:
-		case ENCODER_OBJECT_ID_NUTMEG:
-			return amdgpu_encoder->encoder_id;
+		uint8_t enc_id = display_graphics_object_id_get_encoder_id(amdgpu_encoder->encoder_object_id);
+		switch (enc_id) {
+		case ENCODER_ID_EXTERNAL_TRAVIS:
+		case ENCODER_ID_EXTERNAL_NUTMEG:
+			return enc_id;
 		default:
-			return ENCODER_OBJECT_ID_NONE;
+			return ENCODER_ID_UNKNOWN;
 		}
 	}
-	return ENCODER_OBJECT_ID_NONE;
+	return ENCODER_ID_UNKNOWN;
 }
 
 void amdgpu_panel_mode_fixup(struct drm_encoder *encoder,

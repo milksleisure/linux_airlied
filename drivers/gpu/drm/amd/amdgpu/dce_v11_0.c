@@ -651,6 +651,7 @@ static void dce_v11_0_program_fmt(struct drm_encoder *encoder)
 	int bpc = 0;
 	u32 tmp = 0;
 	enum amdgpu_connector_dither dither = AMDGPU_FMT_DITHER_DISABLE;
+	enum encoder_id enc_id = display_graphics_object_id_get_encoder_id(amdgpu_encoder->encoder_object_id);
 
 	if (connector) {
 		struct amdgpu_connector *amdgpu_connector = to_amdgpu_connector(connector);
@@ -663,8 +664,8 @@ static void dce_v11_0_program_fmt(struct drm_encoder *encoder)
 		return;
 
 	/* not needed for analog */
-	if ((amdgpu_encoder->encoder_id == ENCODER_OBJECT_ID_INTERNAL_KLDSCP_DAC1) ||
-	    (amdgpu_encoder->encoder_id == ENCODER_OBJECT_ID_INTERNAL_KLDSCP_DAC2))
+	if ((enc_id == ENCODER_ID_INTERNAL_KLDSCP_DAC1) ||
+	    (enc_id == ENCODER_ID_INTERNAL_KLDSCP_DAC2))
 		return;
 
 	if (bpc == 0)
@@ -1908,7 +1909,7 @@ static void dce_v11_0_afmt_enable(struct drm_encoder *encoder, bool enable)
 	dig->afmt->enabled = enable;
 
 	DRM_DEBUG("%sabling AFMT interface @ 0x%04X for encoder 0x%x\n",
-		  enable ? "En" : "Dis", dig->afmt->offset, amdgpu_encoder->encoder_id);
+		  enable ? "En" : "Dis", dig->afmt->offset, amdgpu_encoder->encoder_object_id.id);
 }
 
 static int dce_v11_0_afmt_init(struct amdgpu_device *adev)
@@ -2313,31 +2314,32 @@ static int dce_v11_0_pick_dig_encoder(struct drm_encoder *encoder)
 {
 	struct amdgpu_encoder *amdgpu_encoder = to_amdgpu_encoder(encoder);
 	struct amdgpu_encoder_atom_dig *dig = amdgpu_encoder->enc_priv;
+	enum encoder_id enc_id = display_graphics_object_id_get_encoder_id(amdgpu_encoder->encoder_object_id);
 
-	switch (amdgpu_encoder->encoder_id) {
-	case ENCODER_OBJECT_ID_INTERNAL_UNIPHY:
+	switch (enc_id) {
+	case ENCODER_ID_INTERNAL_UNIPHY:
 		if (dig->linkb)
 			return 1;
 		else
 			return 0;
 		break;
-	case ENCODER_OBJECT_ID_INTERNAL_UNIPHY1:
+	case ENCODER_ID_INTERNAL_UNIPHY1:
 		if (dig->linkb)
 			return 3;
 		else
 			return 2;
 		break;
-	case ENCODER_OBJECT_ID_INTERNAL_UNIPHY2:
+	case ENCODER_ID_INTERNAL_UNIPHY2:
 		if (dig->linkb)
 			return 5;
 		else
 			return 4;
 		break;
-	case ENCODER_OBJECT_ID_INTERNAL_UNIPHY3:
+	case ENCODER_ID_INTERNAL_UNIPHY3:
 		return 6;
 		break;
 	default:
-		DRM_ERROR("invalid encoder_id: 0x%x\n", amdgpu_encoder->encoder_id);
+		DRM_ERROR("invalid encoder_id: 0x%x\n", amdgpu_encoder->encoder_object_id.id);
 		return 0;
 	}
 }
@@ -2727,7 +2729,7 @@ static void dce_v11_0_crtc_disable(struct drm_crtc *crtc)
 	case ATOM_PPLL2:
 		/* disable the ppll */
 		amdgpu_atombios_crtc_program_pll(crtc, amdgpu_crtc->crtc_id, amdgpu_crtc->pll_id,
-					  0, 0, ATOM_DISABLE, 0, 0, 0, 0, 0, false, &ss);
+					  0, DISPLAY_NO_OBJECT, ATOM_DISABLE, 0, 0, 0, 0, 0, false, &ss);
 		break;
 	default:
 		break;
@@ -3488,7 +3490,7 @@ static void dce_v11_0_encoder_prepare(struct drm_encoder *encoder)
 	if ((amdgpu_encoder->active_device &
 	     (ATOM_DEVICE_DFP_SUPPORT | ATOM_DEVICE_LCD_SUPPORT)) ||
 	    (amdgpu_encoder_get_dp_bridge_encoder_id(encoder) !=
-	     ENCODER_OBJECT_ID_NONE)) {
+	     ENCODER_ID_UNKNOWN)) {
 		struct amdgpu_encoder_atom_dig *dig = amdgpu_encoder->enc_priv;
 		if (dig) {
 			dig->dig_encoder = dce_v11_0_pick_dig_encoder(encoder);
@@ -3617,9 +3619,9 @@ static const struct drm_encoder_funcs dce_v11_0_encoder_funcs = {
 };
 
 static void dce_v11_0_encoder_add(struct amdgpu_device *adev,
-				 uint32_t encoder_enum,
-				 uint32_t supported_device,
-				 u16 caps)
+				  struct graphics_object_id encoder_object_id,
+				  uint32_t supported_device,
+				  u16 caps)
 {
 	struct drm_device *dev = adev->ddev;
 	struct drm_encoder *encoder;
@@ -3628,7 +3630,8 @@ static void dce_v11_0_encoder_add(struct amdgpu_device *adev,
 	/* see if we already added it */
 	list_for_each_entry(encoder, &dev->mode_config.encoder_list, head) {
 		amdgpu_encoder = to_amdgpu_encoder(encoder);
-		if (amdgpu_encoder->encoder_enum == encoder_enum) {
+		if (display_graphics_object_id_is_equal_unchecked(amdgpu_encoder->encoder_object_id,
+								  encoder_object_id)) {
 			amdgpu_encoder->devices |= supported_device;
 			return;
 		}
@@ -3659,25 +3662,24 @@ static void dce_v11_0_encoder_add(struct amdgpu_device *adev,
 
 	amdgpu_encoder->enc_priv = NULL;
 
-	amdgpu_encoder->encoder_enum = encoder_enum;
-	amdgpu_encoder->encoder_id = (encoder_enum & OBJECT_ID_MASK) >> OBJECT_ID_SHIFT;
+	amdgpu_encoder->encoder_object_id = encoder_object_id;
 	amdgpu_encoder->devices = supported_device;
 	amdgpu_encoder->rmx_type = RMX_OFF;
 	amdgpu_encoder->underscan_type = UNDERSCAN_OFF;
 	amdgpu_encoder->is_ext_encoder = false;
 	amdgpu_encoder->caps = caps;
 
-	switch (amdgpu_encoder->encoder_id) {
-	case ENCODER_OBJECT_ID_INTERNAL_KLDSCP_DAC1:
-	case ENCODER_OBJECT_ID_INTERNAL_KLDSCP_DAC2:
+	switch (encoder_object_id.id) {
+	case ENCODER_ID_INTERNAL_KLDSCP_DAC1:
+	case ENCODER_ID_INTERNAL_KLDSCP_DAC2:
 		drm_encoder_init(dev, encoder, &dce_v11_0_encoder_funcs,
 				 DRM_MODE_ENCODER_DAC, NULL);
 		drm_encoder_helper_add(encoder, &dce_v11_0_dac_helper_funcs);
 		break;
-	case ENCODER_OBJECT_ID_INTERNAL_UNIPHY:
-	case ENCODER_OBJECT_ID_INTERNAL_UNIPHY1:
-	case ENCODER_OBJECT_ID_INTERNAL_UNIPHY2:
-	case ENCODER_OBJECT_ID_INTERNAL_UNIPHY3:
+	case ENCODER_ID_INTERNAL_UNIPHY:
+	case ENCODER_ID_INTERNAL_UNIPHY1:
+	case ENCODER_ID_INTERNAL_UNIPHY2:
+	case ENCODER_ID_INTERNAL_UNIPHY3:
 		if (amdgpu_encoder->devices & (ATOM_DEVICE_LCD_SUPPORT)) {
 			amdgpu_encoder->rmx_type = RMX_FULL;
 			drm_encoder_init(dev, encoder, &dce_v11_0_encoder_funcs,
@@ -3694,8 +3696,8 @@ static void dce_v11_0_encoder_add(struct amdgpu_device *adev,
 		}
 		drm_encoder_helper_add(encoder, &dce_v11_0_dig_helper_funcs);
 		break;
-	case ENCODER_OBJECT_ID_TRAVIS:
-	case ENCODER_OBJECT_ID_NUTMEG:
+	case ENCODER_ID_EXTERNAL_TRAVIS:
+	case ENCODER_ID_EXTERNAL_NUTMEG:
 		/* these are handled by the primary encoders */
 		amdgpu_encoder->is_ext_encoder = true;
 		if (amdgpu_encoder->devices & (ATOM_DEVICE_LCD_SUPPORT))

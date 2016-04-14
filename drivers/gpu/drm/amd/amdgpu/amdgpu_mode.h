@@ -290,7 +290,7 @@ struct amdgpu_display_funcs {
 					u32 *vbl, u32 *position);
 	/* display topology setup */
 	void (*add_encoder)(struct amdgpu_device *adev,
-			    uint32_t encoder_enum,
+			    struct graphics_object_id encoder_id,
 			    uint32_t supported_device,
 			    u16 caps);
 	void (*add_connector)(struct amdgpu_device *adev,
@@ -432,8 +432,7 @@ struct amdgpu_encoder_atom_dig {
 
 struct amdgpu_encoder {
 	struct drm_encoder base;
-	uint32_t encoder_enum;
-	uint32_t encoder_id;
+	struct graphics_object_id encoder_object_id;
 	uint32_t devices;
 	uint32_t active_device;
 	uint32_t flags;
@@ -595,4 +594,6 @@ extern const struct drm_mode_config_funcs amdgpu_mode_funcs;
 
 /* amdgpu_grph_object_id_helpers.c */
 struct graphics_object_id amdgpu_object_id_from_bios_object_id(uint32_t bios_object_id);
+uint8_t amdgpu_encoder_object_to_atom(struct graphics_object_id object_id);
+uint8_t amdgpu_encoder_id_to_atom(enum encoder_id id);
 #endif

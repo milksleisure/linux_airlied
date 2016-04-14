@@ -315,4 +315,5 @@ static inline uint32_t display_graphics_object_id_to_uint(struct graphics_object
 	return object_id;
 }
 
+#define DISPLAY_NO_OBJECT (struct graphics_object_id){0}
 #endif

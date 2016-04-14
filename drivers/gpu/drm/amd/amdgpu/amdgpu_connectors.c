@@ -313,7 +313,7 @@ static void amdgpu_connector_get_edid(struct drm_connector *connector)
 		amdgpu_i2c_router_select_ddc_port(amdgpu_connector);
 
 	if ((amdgpu_connector_encoder_get_dp_bridge_encoder_id(connector) !=
-	     ENCODER_OBJECT_ID_NONE) &&
+	     ENCODER_ID_UNKNOWN) &&
 	    amdgpu_connector->ddc_bus->has_aux) {
 		amdgpu_connector->edid = drm_get_edid(connector,
 						      &amdgpu_connector->ddc_bus->aux.ddc);
@@ -1228,7 +1228,7 @@ static int amdgpu_connector_dp_get_modes(struct drm_connector *connector)
 		} else {
 			/* need to setup ddc on the bridge */
 			if (amdgpu_connector_encoder_get_dp_bridge_encoder_id(connector) !=
-			    ENCODER_OBJECT_ID_NONE) {
+			    ENCODER_ID_UNKNOWN) {
 				if (encoder)
 					amdgpu_atombios_encoder_setup_ext_encoder_ddc(encoder);
 			}
@@ -1262,7 +1262,7 @@ static int amdgpu_connector_dp_get_modes(struct drm_connector *connector)
 	} else {
 		/* need to setup ddc on the bridge */
 		if (amdgpu_connector_encoder_get_dp_bridge_encoder_id(connector) !=
-			ENCODER_OBJECT_ID_NONE) {
+			ENCODER_ID_UNKNOWN) {
 			if (encoder)
 				amdgpu_atombios_encoder_setup_ext_encoder_ddc(encoder);
 		}
@@ -1275,11 +1275,12 @@ static int amdgpu_connector_dp_get_modes(struct drm_connector *connector)
 	return ret;
 }
 
-u16 amdgpu_connector_encoder_get_dp_bridge_encoder_id(struct drm_connector *connector)
+enum encoder_id amdgpu_connector_encoder_get_dp_bridge_encoder_id(struct drm_connector *connector)
 {
 	struct drm_encoder *encoder;
 	struct amdgpu_encoder *amdgpu_encoder;
 	int i;
+	enum encoder_id enc_id;
 
 	for (i = 0; i < DRM_CONNECTOR_MAX_ENCODER; i++) {
 		if (connector->encoder_ids[i] == 0)
@@ -1291,17 +1292,17 @@ u16 amdgpu_connector_encoder_get_dp_bridge_encoder_id(struct drm_connector *conn
 			continue;
 
 		amdgpu_encoder = to_amdgpu_encoder(encoder);
-
-		switch (amdgpu_encoder->encoder_id) {
-		case ENCODER_OBJECT_ID_TRAVIS:
-		case ENCODER_OBJECT_ID_NUTMEG:
-			return amdgpu_encoder->encoder_id;
+		enc_id = display_graphics_object_id_get_encoder_id(amdgpu_encoder->encoder_object_id);
+		switch (enc_id) {
+		case ENCODER_ID_EXTERNAL_TRAVIS:
+		case ENCODER_ID_EXTERNAL_NUTMEG:
+			return enc_id;
 		default:
 			break;
 		}
 	}
 
-	return ENCODER_OBJECT_ID_NONE;
+	return ENCODER_ID_UNKNOWN;
 }
 
 static bool amdgpu_connector_encoder_is_hbr2(struct drm_connector *connector)
@@ -1383,7 +1384,7 @@ amdgpu_connector_dp_detect(struct drm_connector *connector, bool force)
 			amdgpu_atombios_encoder_set_edp_panel_power(connector,
 							     ATOM_TRANSMITTER_ACTION_POWER_OFF);
 	} else if (amdgpu_connector_encoder_get_dp_bridge_encoder_id(connector) !=
-		   ENCODER_OBJECT_ID_NONE) {
+		   ENCODER_ID_UNKNOWN) {
 		/* DP bridges are always DP */
 		amdgpu_dig_connector->dp_sink_type = CONNECTOR_ID_DISPLAY_PORT;
 		/* get the DPCD from the bridge */
@@ -1552,9 +1553,10 @@ amdgpu_connector_add(struct amdgpu_device *adev,
 	list_for_each_entry(encoder, &dev->mode_config.encoder_list, head) {
 		amdgpu_encoder = to_amdgpu_encoder(encoder);
 		if (amdgpu_encoder->devices & supported_device) {
-			switch (amdgpu_encoder->encoder_id) {
-			case ENCODER_OBJECT_ID_TRAVIS:
-			case ENCODER_OBJECT_ID_NUTMEG:
+			enum encoder_id enc_id = display_graphics_object_id_get_encoder_id(amdgpu_encoder->encoder_object_id);
+			switch (enc_id) {
+			case ENCODER_ID_EXTERNAL_TRAVIS:
+			case ENCODER_ID_EXTERNAL_NUTMEG:
 				is_dp_bridge = true;
 				break;
 			default:

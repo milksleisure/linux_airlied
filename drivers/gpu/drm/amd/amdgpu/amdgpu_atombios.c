@@ -341,7 +341,8 @@ bool amdgpu_atombios_get_connector_info_from_object_table(struct amdgpu_device *
 								 le16_to_cpu(enc_obj->asObjects[k].usRecordOffset));
 							ATOM_ENCODER_CAP_RECORD *cap_record;
 							u16 caps = 0;
-
+							struct graphics_object_id encoder_object_id;
+							encoder_object_id = amdgpu_object_id_from_bios_object_id(encoder_obj);
 							while (record->ucRecordSize > 0 &&
 							       record->ucRecordType > 0 &&
 							       record->ucRecordType <= ATOM_MAX_OBJECT_RECORD_NUMBER) {
@@ -355,7 +356,7 @@ bool amdgpu_atombios_get_connector_info_from_object_table(struct amdgpu_device *
 								record = (ATOM_COMMON_RECORD_HEADER *)
 									((char *)record + record->ucRecordSize);
 							}
-							amdgpu_display_add_encoder(adev, encoder_obj,
+							amdgpu_display_add_encoder(adev, encoder_object_id,
 										    le16_to_cpu(path->usDeviceTag),
 										    caps);
 						}
