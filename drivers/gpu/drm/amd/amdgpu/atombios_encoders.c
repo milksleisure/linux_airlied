@@ -1336,21 +1336,11 @@ amdgpu_atombios_encoder_set_crtc_source(struct drm_encoder *encoder)
 				break;
 			case ENCODER_ID_INTERNAL_DAC1:
 			case ENCODER_ID_INTERNAL_KLDSCP_DAC1:
-				if (amdgpu_encoder->active_device & (ATOM_DEVICE_TV_SUPPORT))
-					args.v1.ucDevice = ATOM_DEVICE_TV1_INDEX;
-				else if (amdgpu_encoder->active_device & (ATOM_DEVICE_CV_SUPPORT))
-					args.v1.ucDevice = ATOM_DEVICE_CV_INDEX;
-				else
-					args.v1.ucDevice = ATOM_DEVICE_CRT1_INDEX;
+				args.v1.ucDevice = ATOM_DEVICE_CRT1_INDEX;
 				break;
 			case ENCODER_ID_INTERNAL_DAC2:
 			case ENCODER_ID_INTERNAL_KLDSCP_DAC2:
-				if (amdgpu_encoder->active_device & (ATOM_DEVICE_TV_SUPPORT))
-					args.v1.ucDevice = ATOM_DEVICE_TV1_INDEX;
-				else if (amdgpu_encoder->active_device & (ATOM_DEVICE_CV_SUPPORT))
-					args.v1.ucDevice = ATOM_DEVICE_CV_INDEX;
-				else
-					args.v1.ucDevice = ATOM_DEVICE_CRT2_INDEX;
+				args.v1.ucDevice = ATOM_DEVICE_CRT2_INDEX;
 				break;
 			default:
 				return;
@@ -1404,20 +1394,10 @@ amdgpu_atombios_encoder_set_crtc_source(struct drm_encoder *encoder)
 				}
 				break;
 			case ENCODER_ID_INTERNAL_KLDSCP_DAC1:
-				if (amdgpu_encoder->active_device & (ATOM_DEVICE_TV_SUPPORT))
-					args.v2.ucEncoderID = ASIC_INT_TV_ENCODER_ID;
-				else if (amdgpu_encoder->active_device & (ATOM_DEVICE_CV_SUPPORT))
-					args.v2.ucEncoderID = ASIC_INT_TV_ENCODER_ID;
-				else
-					args.v2.ucEncoderID = ASIC_INT_DAC1_ENCODER_ID;
+				args.v2.ucEncoderID = ASIC_INT_DAC1_ENCODER_ID;
 				break;
 			case ENCODER_ID_INTERNAL_KLDSCP_DAC2:
-				if (amdgpu_encoder->active_device & (ATOM_DEVICE_TV_SUPPORT))
-					args.v2.ucEncoderID = ASIC_INT_TV_ENCODER_ID;
-				else if (amdgpu_encoder->active_device & (ATOM_DEVICE_CV_SUPPORT))
-					args.v2.ucEncoderID = ASIC_INT_TV_ENCODER_ID;
-				else
-					args.v2.ucEncoderID = ASIC_INT_DAC2_ENCODER_ID;
+				args.v2.ucEncoderID = ASIC_INT_DAC2_ENCODER_ID;
 				break;
 			default:
 				return;
@@ -1472,20 +1452,10 @@ amdgpu_atombios_encoder_set_crtc_source(struct drm_encoder *encoder)
 				}
 				break;
 			case ENCODER_ID_INTERNAL_KLDSCP_DAC1:
-				if (amdgpu_encoder->active_device & (ATOM_DEVICE_TV_SUPPORT))
-					args.v3.ucEncoderID = ASIC_INT_TV_ENCODER_ID;
-				else if (amdgpu_encoder->active_device & (ATOM_DEVICE_CV_SUPPORT))
-					args.v3.ucEncoderID = ASIC_INT_TV_ENCODER_ID;
-				else
-					args.v3.ucEncoderID = ASIC_INT_DAC1_ENCODER_ID;
+				args.v3.ucEncoderID = ASIC_INT_DAC1_ENCODER_ID;
 				break;
 			case ENCODER_ID_INTERNAL_KLDSCP_DAC2:
-				if (amdgpu_encoder->active_device & (ATOM_DEVICE_TV_SUPPORT))
-					args.v3.ucEncoderID = ASIC_INT_TV_ENCODER_ID;
-				else if (amdgpu_encoder->active_device & (ATOM_DEVICE_CV_SUPPORT))
-					args.v3.ucEncoderID = ASIC_INT_TV_ENCODER_ID;
-				else
-					args.v3.ucEncoderID = ASIC_INT_DAC2_ENCODER_ID;
+				args.v3.ucEncoderID = ASIC_INT_DAC2_ENCODER_ID;
 				break;
 			default:
 				break;
