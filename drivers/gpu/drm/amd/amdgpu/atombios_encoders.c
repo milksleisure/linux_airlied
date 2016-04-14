@@ -272,7 +272,6 @@ bool amdgpu_atombios_encoder_is_digital(struct drm_encoder *encoder)
 {
 	struct amdgpu_encoder *amdgpu_encoder = to_amdgpu_encoder(encoder);
 	switch (amdgpu_encoder->encoder_id) {
-	case ENCODER_OBJECT_ID_INTERNAL_KLDSCP_DVO1:
 	case ENCODER_OBJECT_ID_INTERNAL_UNIPHY:
 	case ENCODER_OBJECT_ID_INTERNAL_UNIPHY1:
 	case ENCODER_OBJECT_ID_INTERNAL_UNIPHY2:
@@ -369,79 +368,8 @@ static u8 amdgpu_atombios_encoder_get_bpc(struct drm_encoder *encoder)
 	}
 }
 
-union dvo_encoder_control {
-	ENABLE_EXTERNAL_TMDS_ENCODER_PS_ALLOCATION ext_tmds;
-	DVO_ENCODER_CONTROL_PS_ALLOCATION dvo;
-	DVO_ENCODER_CONTROL_PS_ALLOCATION_V3 dvo_v3;
-	DVO_ENCODER_CONTROL_PS_ALLOCATION_V1_4 dvo_v4;
-};
-
-static void
-amdgpu_atombios_encoder_setup_dvo(struct drm_encoder *encoder, int action)
-{
-	struct drm_device *dev = encoder->dev;
-	struct amdgpu_device *adev = dev->dev_private;
-	struct amdgpu_encoder *amdgpu_encoder = to_amdgpu_encoder(encoder);
-	union dvo_encoder_control args;
-	int index = GetIndexIntoMasterTable(COMMAND, DVOEncoderControl);
-	uint8_t frev, crev;
-
-	memset(&args, 0, sizeof(args));
-
-	if (!amdgpu_atom_parse_cmd_header(adev->mode_info.atom_context, index, &frev, &crev))
-		return;
-
-	switch (frev) {
-	case 1:
-		switch (crev) {
-		case 1:
-			/* R4xx, R5xx */
-			args.ext_tmds.sXTmdsEncoder.ucEnable = action;
-
-			if (amdgpu_dig_monitor_is_duallink(encoder, amdgpu_encoder->pixel_clock))
-				args.ext_tmds.sXTmdsEncoder.ucMisc |= PANEL_ENCODER_MISC_DUAL;
-
-			args.ext_tmds.sXTmdsEncoder.ucMisc |= ATOM_PANEL_MISC_888RGB;
-			break;
-		case 2:
-			/* RS600/690/740 */
-			args.dvo.sDVOEncoder.ucAction = action;
-			args.dvo.sDVOEncoder.usPixelClock = cpu_to_le16(amdgpu_encoder->pixel_clock / 10);
-			/* DFP1, CRT1, TV1 depending on the type of port */
-			args.dvo.sDVOEncoder.ucDeviceType = ATOM_DEVICE_DFP1_INDEX;
-
-			if (amdgpu_dig_monitor_is_duallink(encoder, amdgpu_encoder->pixel_clock))
-				args.dvo.sDVOEncoder.usDevAttr.sDigAttrib.ucAttribute |= PANEL_ENCODER_MISC_DUAL;
-			break;
-		case 3:
-			/* R6xx */
-			args.dvo_v3.ucAction = action;
-			args.dvo_v3.usPixelClock = cpu_to_le16(amdgpu_encoder->pixel_clock / 10);
-			args.dvo_v3.ucDVOConfig = 0; /* XXX */
-			break;
-		case 4:
-			/* DCE8 */
-			args.dvo_v4.ucAction = action;
-			args.dvo_v4.usPixelClock = cpu_to_le16(amdgpu_encoder->pixel_clock / 10);
-			args.dvo_v4.ucDVOConfig = 0; /* XXX */
-			args.dvo_v4.ucBitPerColor = amdgpu_atombios_encoder_get_bpc(encoder);
-			break;
-		default:
-			DRM_ERROR("Unknown table version %d, %d\n", frev, crev);
-			break;
-		}
-		break;
-	default:
-		DRM_ERROR("Unknown table version %d, %d\n", frev, crev);
-		break;
-	}
-
-	amdgpu_atom_execute_table(adev->mode_info.atom_context, index, (uint32_t *)&args);
-}
-
 int amdgpu_atombios_encoder_get_encoder_mode(struct drm_encoder *encoder)
 {
-	struct amdgpu_encoder *amdgpu_encoder = to_amdgpu_encoder(encoder);
 	struct drm_connector *connector;
 	struct amdgpu_connector *amdgpu_connector;
 	struct amdgpu_connector_atom_dig *dig_connector;
@@ -449,11 +377,6 @@ int amdgpu_atombios_encoder_get_encoder_mode(struct drm_encoder *encoder)
 	/* dp bridges are always DP */
 	if (amdgpu_encoder_get_dp_bridge_encoder_id(encoder) != ENCODER_OBJECT_ID_NONE)
 		return ATOM_ENCODER_MODE_DP;
-
-	/* DVO is always DVO */
-	if ((amdgpu_encoder->encoder_id == ENCODER_OBJECT_ID_INTERNAL_DVO1) ||
-	    (amdgpu_encoder->encoder_id == ENCODER_OBJECT_ID_INTERNAL_KLDSCP_DVO1))
-		return ATOM_ENCODER_MODE_DVO;
 
 	connector = amdgpu_get_connector_for_encoder(encoder);
 	/* if we don't have an active device yet, just use one of
@@ -768,9 +691,6 @@ amdgpu_atombios_encoder_setup_dig_transmitter(struct drm_encoder *encoder, int a
 	memset(&args, 0, sizeof(args));
 
 	switch (amdgpu_encoder->encoder_id) {
-	case ENCODER_OBJECT_ID_INTERNAL_KLDSCP_DVO1:
-		index = GetIndexIntoMasterTable(COMMAND, DVOOutputControl);
-		break;
 	case ENCODER_OBJECT_ID_INTERNAL_UNIPHY:
 	case ENCODER_OBJECT_ID_INTERNAL_UNIPHY1:
 	case ENCODER_OBJECT_ID_INTERNAL_UNIPHY2:
@@ -1332,18 +1252,6 @@ amdgpu_atombios_encoder_dpms(struct drm_encoder *encoder, int mode)
 			break;
 		}
 		break;
-	case ENCODER_OBJECT_ID_INTERNAL_KLDSCP_DVO1:
-		switch (mode) {
-		case DRM_MODE_DPMS_ON:
-			amdgpu_atombios_encoder_setup_dvo(encoder, ATOM_ENABLE);
-			break;
-		case DRM_MODE_DPMS_STANDBY:
-		case DRM_MODE_DPMS_SUSPEND:
-		case DRM_MODE_DPMS_OFF:
-			amdgpu_atombios_encoder_setup_dvo(encoder, ATOM_DISABLE);
-			break;
-		}
-		break;
 	case ENCODER_OBJECT_ID_INTERNAL_KLDSCP_DAC1:
 		switch (mode) {
 		case DRM_MODE_DPMS_ON:
@@ -1402,9 +1310,7 @@ amdgpu_atombios_encoder_set_crtc_source(struct drm_encoder *encoder)
 				else
 					args.v1.ucDevice = ATOM_DEVICE_DFP3_INDEX;
 				break;
-			case ENCODER_OBJECT_ID_INTERNAL_DVO1:
 			case ENCODER_OBJECT_ID_INTERNAL_DDI:
-			case ENCODER_OBJECT_ID_INTERNAL_KLDSCP_DVO1:
 				args.v1.ucDevice = ATOM_DEVICE_DFP2_INDEX;
 				break;
 			case ENCODER_OBJECT_ID_INTERNAL_DAC1:
@@ -1474,9 +1380,6 @@ amdgpu_atombios_encoder_set_crtc_source(struct drm_encoder *encoder)
 					break;
 				}
 				break;
-			case ENCODER_OBJECT_ID_INTERNAL_KLDSCP_DVO1:
-				args.v2.ucEncoderID = ASIC_INT_DVO_ENCODER_ID;
-				break;
 			case ENCODER_OBJECT_ID_INTERNAL_KLDSCP_DAC1:
 				if (amdgpu_encoder->active_device & (ATOM_DEVICE_TV_SUPPORT))
 					args.v2.ucEncoderID = ASIC_INT_TV_ENCODER_ID;
@@ -1542,9 +1445,6 @@ amdgpu_atombios_encoder_set_crtc_source(struct drm_encoder *encoder)
 					args.v3.ucEncoderID = ASIC_INT_DIG7_ENCODER_ID;
 					break;
 				}
-				break;
-			case ENCODER_OBJECT_ID_INTERNAL_KLDSCP_DVO1:
-				args.v3.ucEncoderID = ASIC_INT_DVO_ENCODER_ID;
 				break;
 			case ENCODER_OBJECT_ID_INTERNAL_KLDSCP_DAC1:
 				if (amdgpu_encoder->active_device & (ATOM_DEVICE_TV_SUPPORT))

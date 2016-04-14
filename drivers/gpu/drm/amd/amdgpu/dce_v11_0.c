@@ -3674,7 +3674,6 @@ static void dce_v11_0_encoder_add(struct amdgpu_device *adev,
 				 DRM_MODE_ENCODER_DAC, NULL);
 		drm_encoder_helper_add(encoder, &dce_v11_0_dac_helper_funcs);
 		break;
-	case ENCODER_OBJECT_ID_INTERNAL_KLDSCP_DVO1:
 	case ENCODER_OBJECT_ID_INTERNAL_UNIPHY:
 	case ENCODER_OBJECT_ID_INTERNAL_UNIPHY1:
 	case ENCODER_OBJECT_ID_INTERNAL_UNIPHY2:
@@ -3695,13 +3694,6 @@ static void dce_v11_0_encoder_add(struct amdgpu_device *adev,
 		}
 		drm_encoder_helper_add(encoder, &dce_v11_0_dig_helper_funcs);
 		break;
-	case ENCODER_OBJECT_ID_SI170B:
-	case ENCODER_OBJECT_ID_CH7303:
-	case ENCODER_OBJECT_ID_EXTERNAL_SDVOA:
-	case ENCODER_OBJECT_ID_EXTERNAL_SDVOB:
-	case ENCODER_OBJECT_ID_TITFP513:
-	case ENCODER_OBJECT_ID_VT1623:
-	case ENCODER_OBJECT_ID_HDMI_SI1930:
 	case ENCODER_OBJECT_ID_TRAVIS:
 	case ENCODER_OBJECT_ID_NUTMEG:
 		/* these are handled by the primary encoders */

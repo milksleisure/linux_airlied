@@ -344,9 +344,6 @@ static u32 amdgpu_atombios_crtc_adjust_pll(struct drm_crtc *crtc,
 		}
 	}
 
-	/* DVO wants 2x pixel clock if the DVO chip is in 12 bit mode */
-	if (amdgpu_encoder->encoder_id == ENCODER_OBJECT_ID_INTERNAL_KLDSCP_DVO1)
-		adjusted_clock = mode->clock * 2;
 	if (amdgpu_encoder->active_device & (ATOM_DEVICE_TV_SUPPORT))
 		amdgpu_crtc->pll_flags |= AMDGPU_PLL_PREFER_CLOSEST_LOWER;
 	if (amdgpu_encoder->devices & (ATOM_DEVICE_LCD_SUPPORT))
