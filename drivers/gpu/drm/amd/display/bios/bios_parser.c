@@ -75,3 +75,17 @@ enum bp_result display_bios_enable_crtc(struct display_bios *dcb,
 
 	return bp->cmd_tbl.enable_crtc(bp, id, enable);
 }
+
+enum bp_result display_bios_enable_disp_power_gating(
+	struct display_bios *dcb,
+	enum controller_id controller_id,
+	enum bp_pipe_control_action action)
+{
+	struct bios_parser *bp = dcb_to_bp(dcb);
+
+	if (!bp->cmd_tbl.enable_disp_power_gating)
+		return BP_RESULT_FAILURE;
+
+	return bp->cmd_tbl.enable_disp_power_gating(bp, controller_id,
+						    action);
+}

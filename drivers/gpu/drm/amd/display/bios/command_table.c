@@ -92,6 +92,28 @@ static bool cmd_table_helper_controller_id_to_atom(enum controller_id id,
 	}
 }
 
+static uint8_t cmd_table_helper_disp_power_gating_action_to_atom(
+        enum bp_pipe_control_action action)
+{
+        uint8_t atom_pipe_action = 0;
+
+        switch (action) {
+        case ASIC_PIPE_DISABLE:
+                atom_pipe_action = ATOM_DISABLE;
+                break;
+        case ASIC_PIPE_ENABLE:
+                atom_pipe_action = ATOM_ENABLE;
+                break;
+        case ASIC_PIPE_INIT:
+                atom_pipe_action = ATOM_INIT;
+                break;
+        default:
+                break;
+        }
+
+        return atom_pipe_action;
+}
+
 /*
  * ENABLE CRTC
  */
@@ -181,9 +203,49 @@ static void init_blank_crtc(struct bios_parser *bp)
 	}
 }
 
+/*
+ * ENABLE DISPLAY POWER GATING
+ */
+static enum bp_result enable_disp_power_gating_v2_1(
+	struct bios_parser *bp,
+	enum controller_id crtc_id,
+	enum bp_pipe_control_action action)
+{
+	enum bp_result result = BP_RESULT_FAILURE;
+
+	ENABLE_DISP_POWER_GATING_PARAMETERS_V2_1 params = {0};
+	uint8_t atom_crtc_id;
+
+	if (cmd_table_helper_controller_id_to_atom(crtc_id, &atom_crtc_id))
+		params.ucDispPipeId = atom_crtc_id;
+	else
+		return BP_RESULT_BADINPUT;
+
+	params.ucEnable = cmd_table_helper_disp_power_gating_action_to_atom(action);
+
+	if (EXEC_BIOS_CMD_TABLE(EnableDispPowerGating, params))
+		result = BP_RESULT_OK;
+
+	return result;
+}
+
+static void init_enable_disp_power_gating(struct bios_parser *bp)
+{
+	switch (BIOS_CMD_TABLE_PARA_REVISION(EnableDispPowerGating)) {
+	case 1:
+		bp->cmd_tbl.enable_disp_power_gating =
+			enable_disp_power_gating_v2_1;
+		break;
+	default:
+		bp->cmd_tbl.enable_disp_power_gating = NULL;
+		break;
+	}
+}
+
 
 void display_bios_parser_init_cmd_tbl(struct bios_parser *bp)
 {
 	init_enable_crtc(bp);
 	init_blank_crtc(bp);
+	init_enable_disp_power_gating(bp);
 }

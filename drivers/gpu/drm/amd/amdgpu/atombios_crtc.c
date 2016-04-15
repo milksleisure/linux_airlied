@@ -159,28 +159,20 @@ void amdgpu_atombios_crtc_powergate(struct drm_crtc *crtc, int state)
 	struct amdgpu_crtc *amdgpu_crtc = to_amdgpu_crtc(crtc);
 	struct drm_device *dev = crtc->dev;
 	struct amdgpu_device *adev = dev->dev_private;
-	int index = GetIndexIntoMasterTable(COMMAND, EnableDispPowerGating);
-	ENABLE_DISP_POWER_GATING_PARAMETERS_V2_1 args;
 	enum controller_id controller_id = display_graphics_object_id_get_controller_id(amdgpu_crtc->crtc_object_id);
+	enum bp_result res;
 
-	memset(&args, 0, sizeof(args));
-
-	args.ucDispPipeId = controller_id;
-	args.ucEnable = state;
-
-	amdgpu_atom_execute_table(adev->mode_info.atom_context, index, (uint32_t *)&args);
+	res = display_bios_enable_disp_power_gating(adev->dcb, controller_id, state ? ASIC_PIPE_ENABLE : ASIC_PIPE_DISABLE);
+	if (res)
+		DRM_ERROR("bios call failed: %d\n", res);
 }
 
 void amdgpu_atombios_crtc_powergate_init(struct amdgpu_device *adev)
 {
-	int index = GetIndexIntoMasterTable(COMMAND, EnableDispPowerGating);
-	ENABLE_DISP_POWER_GATING_PARAMETERS_V2_1 args;
-
-	memset(&args, 0, sizeof(args));
-
-	args.ucEnable = ATOM_INIT;
-
-	amdgpu_atom_execute_table(adev->mode_info.atom_context, index, (uint32_t *)&args);
+	enum bp_result res;
+	res = display_bios_enable_disp_power_gating(adev->dcb, 0, ASIC_PIPE_INIT);
+	if (res)
+		DRM_ERROR("bios call failed: %d\n", res);
 }
 
 void amdgpu_atombios_crtc_set_dtd_timing(struct drm_crtc *crtc,

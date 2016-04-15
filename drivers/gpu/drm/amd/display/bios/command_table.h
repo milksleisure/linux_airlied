@@ -35,6 +35,9 @@ struct cmd_tbl {
 	enum bp_result (*blank_crtc)(struct bios_parser *bp,
 				     struct bp_blank_crtc_parameters *bp_params,
 				     bool blank);
+	enum bp_result (*enable_disp_power_gating)(struct bios_parser *bp,
+						   enum controller_id crtc_id,
+						   enum bp_pipe_control_action action);
 };
 
 void display_bios_parser_init_cmd_tbl(struct bios_parser *bp);

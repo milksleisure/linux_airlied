@@ -32,11 +32,21 @@ struct bp_blank_crtc_parameters {
         uint32_t black_color_bcb;
 };
 
+enum bp_pipe_control_action {
+        ASIC_PIPE_DISABLE = 0,
+        ASIC_PIPE_ENABLE,
+        ASIC_PIPE_INIT
+};
+
 enum bp_result display_bios_enable_crtc(struct display_bios *bios,
 					enum controller_id id,
 					bool enable);
 enum bp_result display_bios_blank_crtc(struct display_bios *bios,
 				       struct bp_blank_crtc_parameters *bp_params,
 				       bool blank);
+enum bp_result display_bios_enable_disp_power_gating(struct display_bios *bios,
+						     enum controller_id controller_id,
+						     enum bp_pipe_control_action action);
+
 
 #endif
