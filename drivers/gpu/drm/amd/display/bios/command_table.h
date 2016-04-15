@@ -32,6 +32,9 @@ struct cmd_tbl {
 	enum bp_result (*enable_crtc)(struct bios_parser *bp,
 				      enum controller_id controller_id,
 				      bool enable);
+	enum bp_result (*blank_crtc)(struct bios_parser *bp,
+				     struct bp_blank_crtc_parameters *bp_params,
+				     bool blank);
 };
 
 void display_bios_parser_init_cmd_tbl(struct bios_parser *bp);

@@ -132,7 +132,58 @@ static void init_enable_crtc(struct bios_parser *bp)
 	}
 }
 
+/*
+ * BLANK CRTC
+ */
+static enum bp_result blank_crtc_v1(struct bios_parser *bp,
+				    struct bp_blank_crtc_parameters *bp_params,
+				    bool blank)
+{
+	enum bp_result result = BP_RESULT_FAILURE;
+	BLANK_CRTC_PARAMETERS params = {0};
+	uint8_t atom_controller_id;
+
+	if (cmd_table_helper_controller_id_to_atom(bp_params->controller_id,
+						   &atom_controller_id)) {
+		params.ucCRTC = (uint8_t)atom_controller_id;
+
+		if (blank)
+			params.ucBlanking = ATOM_BLANKING;
+		else
+			params.ucBlanking = ATOM_BLANKING_OFF;
+		params.usBlackColorRCr =
+				cpu_to_le16((uint16_t)bp_params->black_color_rcr);
+		params.usBlackColorGY =
+				cpu_to_le16((uint16_t)bp_params->black_color_gy);
+		params.usBlackColorBCb =
+				cpu_to_le16((uint16_t)bp_params->black_color_bcb);
+
+		if (EXEC_BIOS_CMD_TABLE(BlankCRTC, params))
+			result = BP_RESULT_OK;
+	} else
+		/* Not support more than two CRTC as current ASIC, update this
+		 * if needed.
+		 */
+		result = BP_RESULT_BADINPUT;
+
+	return result;
+}
+
+static void init_blank_crtc(struct bios_parser *bp)
+{
+	switch (BIOS_CMD_TABLE_PARA_REVISION(BlankCRTC)) {
+	case 1:
+		bp->cmd_tbl.blank_crtc = blank_crtc_v1;
+		break;
+	default:
+		bp->cmd_tbl.blank_crtc = NULL;
+		break;
+	}
+}
+
+
 void display_bios_parser_init_cmd_tbl(struct bios_parser *bp)
 {
 	init_enable_crtc(bp);
+	init_blank_crtc(bp);
 }

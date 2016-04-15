@@ -25,8 +25,18 @@ enum bp_result {
 	BP_RESULT_FAILURE
 };
 
+struct bp_blank_crtc_parameters {
+        enum controller_id controller_id;
+        uint32_t black_color_rcr;
+        uint32_t black_color_gy;
+        uint32_t black_color_bcb;
+};
+
 enum bp_result display_bios_enable_crtc(struct display_bios *bios,
 					enum controller_id id,
 					bool enable);
+enum bp_result display_bios_blank_crtc(struct display_bios *bios,
+				       struct bp_blank_crtc_parameters *bp_params,
+				       bool blank);
 
 #endif
