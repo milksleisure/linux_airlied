@@ -287,13 +287,25 @@ static void amdgpu_atombios_crtc_program_ss(struct amdgpu_device *adev,
 	amdgpu_atom_execute_table(adev->mode_info.atom_context, index, (uint32_t *)&args);
 }
 
-union adjust_pixel_clock {
-	ADJUST_DISPLAY_PLL_PS_ALLOCATION v1;
-	ADJUST_DISPLAY_PLL_PS_ALLOCATION_V3 v3;
-};
+static enum signal_type encoder_mode_to_signal_type(int encoder_mode, bool is_duallink)
+{
+	switch (encoder_mode) {
+	case ATOM_ENCODER_MODE_DVI:
+		return (is_duallink ? SIGNAL_TYPE_DVI_DUAL_LINK : SIGNAL_TYPE_DVI_SINGLE_LINK);
+	case ATOM_ENCODER_MODE_HDMI:
+		return SIGNAL_TYPE_HDMI_TYPE_A;
+	case ATOM_ENCODER_MODE_LVDS:
+		return SIGNAL_TYPE_LVDS;
+	case ATOM_ENCODER_MODE_DP:
+		return SIGNAL_TYPE_DISPLAY_PORT;
+	case ATOM_ENCODER_MODE_CRT:
+	default:
+		return SIGNAL_TYPE_RGB;
+	}
+}
 
 static u32 amdgpu_atombios_crtc_adjust_pll(struct drm_crtc *crtc,
-				    struct drm_display_mode *mode)
+					   struct drm_display_mode *mode)
 {
 	struct amdgpu_crtc *amdgpu_crtc = to_amdgpu_crtc(crtc);
 	struct drm_device *dev = crtc->dev;
@@ -301,16 +313,17 @@ static u32 amdgpu_atombios_crtc_adjust_pll(struct drm_crtc *crtc,
 	struct drm_encoder *encoder = amdgpu_crtc->encoder;
 	struct amdgpu_encoder *amdgpu_encoder = to_amdgpu_encoder(encoder);
 	struct drm_connector *connector = amdgpu_get_connector_for_encoder(encoder);
-	u32 adjusted_clock = mode->clock;
 	int encoder_mode = amdgpu_atombios_encoder_get_encoder_mode(encoder);
-	u32 dp_clock = mode->clock;
+	struct bp_adjust_pixel_clock_parameters args = {0};
 	u32 clock = mode->clock;
+	u32 dp_clock = mode->clock;
 	int bpc = amdgpu_crtc->bpc;
 	bool is_duallink = amdgpu_dig_monitor_is_duallink(encoder, mode->clock);
-	union adjust_pixel_clock args;
-	u8 frev, crev;
-	int index;
-	uint8_t atom_enc_id;
+	u32 adjusted_clock = mode->clock;
+	enum bp_result res;
+
+	args.signal_type = encoder_mode_to_signal_type(encoder_mode, is_duallink);
+
 	amdgpu_crtc->pll_flags = AMDGPU_PLL_USE_FRAC_FB_DIV;
 
 	if ((amdgpu_encoder->devices & (ATOM_DEVICE_LCD_SUPPORT | ATOM_DEVICE_DFP_SUPPORT)) ||
@@ -333,14 +346,12 @@ static u32 amdgpu_atombios_crtc_adjust_pll(struct drm_crtc *crtc,
 				amdgpu_crtc->pll_flags |= AMDGPU_PLL_USE_FRAC_FB_DIV;
 			}
 		}
-	}
 
+	}
 	if (amdgpu_encoder->active_device & (ATOM_DEVICE_TV_SUPPORT))
 		amdgpu_crtc->pll_flags |= AMDGPU_PLL_PREFER_CLOSEST_LOWER;
 	if (amdgpu_encoder->devices & (ATOM_DEVICE_LCD_SUPPORT))
 		amdgpu_crtc->pll_flags |= AMDGPU_PLL_IS_LCD;
-
-
 	/* adjust pll for deep color modes */
 	if (encoder_mode == ATOM_ENCODER_MODE_HDMI) {
 		switch (bpc) {
@@ -358,88 +369,34 @@ static u32 amdgpu_atombios_crtc_adjust_pll(struct drm_crtc *crtc,
 			break;
 		}
 	}
+	if (amdgpu_crtc->ss_enabled && amdgpu_crtc->ss.percentage)
+		args.ss_enable = true;
 
-	atom_enc_id = amdgpu_encoder_object_to_atom(amdgpu_encoder->encoder_object_id);
-	/* DCE3+ has an AdjustDisplayPll that will adjust the pixel clock
-	 * accordingly based on the encoder/transmitter to work around
-	 * special hw requirements.
-	 */
-	index = GetIndexIntoMasterTable(COMMAND, AdjustDisplayPll);
-	if (!amdgpu_atom_parse_cmd_header(adev->mode_info.atom_context, index, &frev,
-				   &crev))
-		return adjusted_clock;
+	if (ENCODER_MODE_IS_DP(encoder_mode))
+		args.pixel_clock = dp_clock;
+	else
+		args.pixel_clock = clock;
 
-	memset(&args, 0, sizeof(args));
+	args.encoder_object_id = amdgpu_encoder->encoder_object_id;
 
-	switch (frev) {
-	case 1:
-		switch (crev) {
-		case 1:
-		case 2:
-			args.v1.usPixelClock = cpu_to_le16(clock / 10);
-			args.v1.ucTransmitterID = atom_enc_id;
-			args.v1.ucEncodeMode = encoder_mode;
-			if (amdgpu_crtc->ss_enabled && amdgpu_crtc->ss.percentage)
-				args.v1.ucConfig |=
-					ADJUST_DISPLAY_CONFIG_SS_ENABLE;
-
-			amdgpu_atom_execute_table(adev->mode_info.atom_context,
-					   index, (uint32_t *)&args);
-			adjusted_clock = le16_to_cpu(args.v1.usPixelClock) * 10;
-			break;
-		case 3:
-			args.v3.sInput.usPixelClock = cpu_to_le16(clock / 10);
-			args.v3.sInput.ucTransmitterID = atom_enc_id;
-			args.v3.sInput.ucEncodeMode = encoder_mode;
-			args.v3.sInput.ucDispPllConfig = 0;
-			if (amdgpu_crtc->ss_enabled && amdgpu_crtc->ss.percentage)
-				args.v3.sInput.ucDispPllConfig |=
-					DISPPLL_CONFIG_SS_ENABLE;
-			if (ENCODER_MODE_IS_DP(encoder_mode)) {
-				args.v3.sInput.ucDispPllConfig |=
-					DISPPLL_CONFIG_COHERENT_MODE;
-				/* 16200 or 27000 */
-				args.v3.sInput.usPixelClock = cpu_to_le16(dp_clock / 10);
-			} else if (amdgpu_encoder->devices & (ATOM_DEVICE_DFP_SUPPORT)) {
-				struct amdgpu_encoder_atom_dig *dig = amdgpu_encoder->enc_priv;
-				if (dig->coherent_mode)
-					args.v3.sInput.ucDispPllConfig |=
-						DISPPLL_CONFIG_COHERENT_MODE;
-				if (is_duallink)
-					args.v3.sInput.ucDispPllConfig |=
-						DISPPLL_CONFIG_DUAL_LINK;
-			}
-			if (amdgpu_encoder_get_dp_bridge_encoder_id(encoder) !=
-			    ENCODER_ID_UNKNOWN)
-				args.v3.sInput.ucExtTransmitterID =
-				  amdgpu_encoder_id_to_atom(amdgpu_encoder_get_dp_bridge_encoder_id(encoder));
-			else
-				args.v3.sInput.ucExtTransmitterID = 0;
-
-			amdgpu_atom_execute_table(adev->mode_info.atom_context,
-					   index, (uint32_t *)&args);
-			adjusted_clock = le32_to_cpu(args.v3.sOutput.ulDispPllFreq) * 10;
-			if (args.v3.sOutput.ucRefDiv) {
-				amdgpu_crtc->pll_flags |= AMDGPU_PLL_USE_FRAC_FB_DIV;
-				amdgpu_crtc->pll_flags |= AMDGPU_PLL_USE_REF_DIV;
-				amdgpu_crtc->pll_reference_div = args.v3.sOutput.ucRefDiv;
-			}
-			if (args.v3.sOutput.ucPostDiv) {
-				amdgpu_crtc->pll_flags |= AMDGPU_PLL_USE_FRAC_FB_DIV;
-				amdgpu_crtc->pll_flags |= AMDGPU_PLL_USE_POST_DIV;
-				amdgpu_crtc->pll_post_div = args.v3.sOutput.ucPostDiv;
-			}
-			break;
-		default:
-			DRM_ERROR("Unknown table version %d %d\n", frev, crev);
-			return adjusted_clock;
-		}
-		break;
-	default:
-		DRM_ERROR("Unknown table version %d %d\n", frev, crev);
+	res = display_bios_adjust_pixel_clock(adev->dcb, &args);
+	if (res) {
+		DRM_ERROR("bios call failed: %d\n", res);
 		return adjusted_clock;
 	}
 
+	adjusted_clock = args.adjusted_pixel_clock;
+
+	if (args.reference_divider) {
+		amdgpu_crtc->pll_flags |= AMDGPU_PLL_USE_FRAC_FB_DIV;
+		amdgpu_crtc->pll_flags |= AMDGPU_PLL_USE_REF_DIV;
+		amdgpu_crtc->pll_reference_div = args.reference_divider;
+	}
+	if (args.pixel_clock_post_divider) {
+		amdgpu_crtc->pll_flags |= AMDGPU_PLL_USE_FRAC_FB_DIV;
+		amdgpu_crtc->pll_flags |= AMDGPU_PLL_USE_POST_DIV;
+		amdgpu_crtc->pll_post_div = args.pixel_clock_post_divider;
+	}
 	return adjusted_clock;
 }
 

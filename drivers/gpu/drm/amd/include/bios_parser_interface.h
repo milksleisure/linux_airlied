@@ -3,7 +3,7 @@
 
 #include "display_types.h"
 #include "display_grph_object_id.h"
-
+#include "display_signal_types.h"
 struct bp_init_data {
 	struct cgs_device *cgs;
 	uint8_t *bios;
@@ -38,6 +38,27 @@ enum bp_pipe_control_action {
         ASIC_PIPE_INIT
 };
 
+struct bp_adjust_pixel_clock_parameters {
+	/* Input: Signal Type - to be converted to Encoder mode */
+	enum signal_type signal_type;
+	/* Input: Encoder object id */
+	struct graphics_object_id encoder_object_id;
+	/* Input: Pixel Clock (requested Pixel clock based on Video timing
+	 * standard used) in KHz
+	 */
+	uint32_t pixel_clock;
+	/* Output: Adjusted Pixel Clock (after VBIOS exec table) in KHz */
+	uint32_t adjusted_pixel_clock;
+	/* Output: If non-zero, this refDiv value should be used to calculate
+	 * other ppll params */
+	uint32_t reference_divider;
+	/* Output: If non-zero, this postDiv value should be used to calculate
+	 * other ppll params */
+	uint32_t pixel_clock_post_divider;
+	/* Input: Enable spread spectrum */
+	bool ss_enable;
+};
+
 enum bp_result display_bios_enable_crtc(struct display_bios *bios,
 					enum controller_id id,
 					bool enable);
@@ -47,6 +68,6 @@ enum bp_result display_bios_blank_crtc(struct display_bios *bios,
 enum bp_result display_bios_enable_disp_power_gating(struct display_bios *bios,
 						     enum controller_id controller_id,
 						     enum bp_pipe_control_action action);
-
-
+enum bp_result display_bios_adjust_pixel_clock(struct display_bios *bios,
+					       struct bp_adjust_pixel_clock_parameters *bp_params);
 #endif

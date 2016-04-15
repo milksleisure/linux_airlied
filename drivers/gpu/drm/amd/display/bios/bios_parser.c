@@ -89,3 +89,14 @@ enum bp_result display_bios_enable_disp_power_gating(
 	return bp->cmd_tbl.enable_disp_power_gating(bp, controller_id,
 						    action);
 }
+
+enum bp_result display_bios_adjust_pixel_clock(struct display_bios *dcb,
+					       struct bp_adjust_pixel_clock_parameters *bp_params)
+{
+	struct bios_parser *bp = dcb_to_bp(dcb);
+
+	if (!bp->cmd_tbl.adjust_display_pll)
+		return BP_RESULT_FAILURE;
+
+	return bp->cmd_tbl.adjust_display_pll(bp, bp_params);
+}

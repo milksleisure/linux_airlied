@@ -23,25 +23,24 @@
  *
  */
 
-#ifndef __DISPLAY_COMMAND_TABLE_H__
-#define __DISPLAY_COMMAND_TABLE_H__
+#ifndef __DISPLAY_SIGNAL_TYPES_H__
+#define __DISPLAY_SIGNAL_TYPES_H__
 
-struct bios_parser;
+enum signal_type {
+	SIGNAL_TYPE_NONE		= 0L,		/* no signal */
+	SIGNAL_TYPE_DVI_SINGLE_LINK	= (1 << 0),
+	SIGNAL_TYPE_DVI_DUAL_LINK	= (1 << 1),
+	SIGNAL_TYPE_HDMI_TYPE_A		= (1 << 2),
+	SIGNAL_TYPE_LVDS		= (1 << 3),
+	SIGNAL_TYPE_RGB			= (1 << 4),
+	SIGNAL_TYPE_DISPLAY_PORT	= (1 << 5),
+	SIGNAL_TYPE_DISPLAY_PORT_MST	= (1 << 6),
+	SIGNAL_TYPE_EDP			= (1 << 7),
+	SIGNAL_TYPE_WIRELESS		= (1 << 8),	/* Wireless Display */
+	SIGNAL_TYPE_VIRTUAL		= (1 << 9),	/* Virtual Display */
 
-struct cmd_tbl {
-	enum bp_result (*enable_crtc)(struct bios_parser *bp,
-				      enum controller_id controller_id,
-				      bool enable);
-	enum bp_result (*blank_crtc)(struct bios_parser *bp,
-				     struct bp_blank_crtc_parameters *bp_params,
-				     bool blank);
-	enum bp_result (*enable_disp_power_gating)(struct bios_parser *bp,
-						   enum controller_id crtc_id,
-						   enum bp_pipe_control_action action);
-	enum bp_result (*adjust_display_pll)(struct bios_parser *bp,
-					     struct bp_adjust_pixel_clock_parameters *bp_params);
+	SIGNAL_TYPE_COUNT		= 10,
+	SIGNAL_TYPE_ALL			= (1 << SIGNAL_TYPE_COUNT) - 1
 };
-
-void display_bios_parser_init_cmd_tbl(struct bios_parser *bp);
 
 #endif

@@ -114,6 +114,84 @@ static uint8_t cmd_table_helper_disp_power_gating_action_to_atom(
         return atom_pipe_action;
 }
 
+static uint8_t cmd_table_helper_encoder_id_to_atom(
+	enum encoder_id id)
+{
+	switch (id) {
+	case ENCODER_ID_INTERNAL_LVDS:
+		return ENCODER_OBJECT_ID_INTERNAL_LVDS;
+	case ENCODER_ID_INTERNAL_TMDS1:
+		return ENCODER_OBJECT_ID_INTERNAL_TMDS1;
+	case ENCODER_ID_INTERNAL_TMDS2:
+		return ENCODER_OBJECT_ID_INTERNAL_TMDS2;
+	case ENCODER_ID_INTERNAL_DAC1:
+		return ENCODER_OBJECT_ID_INTERNAL_DAC1;
+	case ENCODER_ID_INTERNAL_DAC2:
+		return ENCODER_OBJECT_ID_INTERNAL_DAC2;
+	case ENCODER_ID_INTERNAL_LVTM1:
+		return ENCODER_OBJECT_ID_INTERNAL_LVTM1;
+	case ENCODER_ID_INTERNAL_HDMI:
+		return ENCODER_OBJECT_ID_HDMI_INTERNAL;
+	case ENCODER_ID_EXTERNAL_TRAVIS:
+		return ENCODER_OBJECT_ID_TRAVIS;
+	case ENCODER_ID_EXTERNAL_NUTMEG:
+		return ENCODER_OBJECT_ID_NUTMEG;
+	case ENCODER_ID_INTERNAL_KLDSCP_TMDS1:
+		return ENCODER_OBJECT_ID_INTERNAL_KLDSCP_TMDS1;
+	case ENCODER_ID_INTERNAL_KLDSCP_DAC1:
+		return ENCODER_OBJECT_ID_INTERNAL_KLDSCP_DAC1;
+	case ENCODER_ID_INTERNAL_KLDSCP_DAC2:
+		return ENCODER_OBJECT_ID_INTERNAL_KLDSCP_DAC2;
+	case ENCODER_ID_EXTERNAL_MVPU_FPGA:
+		return ENCODER_OBJECT_ID_MVPU_FPGA;
+	case ENCODER_ID_INTERNAL_DDI:
+		return ENCODER_OBJECT_ID_INTERNAL_DDI;
+	case ENCODER_ID_INTERNAL_UNIPHY:
+		return ENCODER_OBJECT_ID_INTERNAL_UNIPHY;
+	case ENCODER_ID_INTERNAL_KLDSCP_LVTMA:
+		return ENCODER_OBJECT_ID_INTERNAL_KLDSCP_LVTMA;
+	case ENCODER_ID_INTERNAL_UNIPHY1:
+		return ENCODER_OBJECT_ID_INTERNAL_UNIPHY1;
+	case ENCODER_ID_INTERNAL_UNIPHY2:
+		return ENCODER_OBJECT_ID_INTERNAL_UNIPHY2;
+	case ENCODER_ID_INTERNAL_UNIPHY3:
+		return ENCODER_OBJECT_ID_INTERNAL_UNIPHY3;
+	case ENCODER_ID_INTERNAL_WIRELESS:
+		return ENCODER_OBJECT_ID_INTERNAL_VCE;
+	case ENCODER_ID_UNKNOWN:
+		return ENCODER_OBJECT_ID_NONE;
+	default:
+		/* Invalid encoder id */
+		return ENCODER_OBJECT_ID_NONE;
+	}
+}
+
+static uint32_t cmd_table_helper_encoder_mode_bp_to_atom(
+	enum signal_type s,
+	bool enable_dp_audio)
+{
+	switch (s) {
+	case SIGNAL_TYPE_DVI_SINGLE_LINK:
+	case SIGNAL_TYPE_DVI_DUAL_LINK:
+		return ATOM_ENCODER_MODE_DVI;
+	case SIGNAL_TYPE_HDMI_TYPE_A:
+		return ATOM_ENCODER_MODE_HDMI;
+	case SIGNAL_TYPE_LVDS:
+		return ATOM_ENCODER_MODE_LVDS;
+	case SIGNAL_TYPE_EDP:
+	case SIGNAL_TYPE_DISPLAY_PORT_MST:
+	case SIGNAL_TYPE_DISPLAY_PORT:
+		if (enable_dp_audio)
+			return ATOM_ENCODER_MODE_DP_AUDIO;
+		else
+			return ATOM_ENCODER_MODE_DP;
+	case SIGNAL_TYPE_RGB:
+		return ATOM_ENCODER_MODE_CRT;
+	default:
+		return ATOM_ENCODER_MODE_CRT;
+	}
+}
+
 /*
  * ENABLE CRTC
  */
@@ -242,10 +320,102 @@ static void init_enable_disp_power_gating(struct bios_parser *bp)
 	}
 }
 
+/*
+ * ADJUST DISPLAY PLL
+ */
+static enum bp_result adjust_display_pll_v2(
+	struct bios_parser *bp,
+	struct bp_adjust_pixel_clock_parameters *bp_params)
+{
+	enum bp_result result = BP_RESULT_FAILURE;
+	ADJUST_DISPLAY_PLL_PS_ALLOCATION params = { 0 };
+
+	/* We need to convert from KHz units into 10KHz units and then convert
+	 * output pixel clock back 10KHz-->KHz */
+	uint32_t pixel_clock_10KHz_in = bp_params->pixel_clock / 10;
+
+	params.usPixelClock = cpu_to_le16((uint16_t)(pixel_clock_10KHz_in));
+	params.ucTransmitterID =
+			cmd_table_helper_encoder_id_to_atom(
+					display_graphics_object_id_get_encoder_id(
+							bp_params->encoder_object_id));
+	params.ucEncodeMode =
+		(uint8_t)cmd_table_helper_encoder_mode_bp_to_atom(
+					bp_params->signal_type, false);
+	return result;
+}
+
+static enum bp_result adjust_display_pll_v3(
+	struct bios_parser *bp,
+	struct bp_adjust_pixel_clock_parameters *bp_params)
+{
+	enum bp_result result = BP_RESULT_FAILURE;
+	ADJUST_DISPLAY_PLL_PS_ALLOCATION_V3 params;
+	uint32_t pixel_clk_10_kHz_in = bp_params->pixel_clock / 10;
+
+	memset(&params, 0, sizeof(params));
+
+	/* We need to convert from KHz units into 10KHz units and then convert
+	 * output pixel clock back 10KHz-->KHz */
+	params.sInput.usPixelClock = cpu_to_le16((uint16_t)pixel_clk_10_kHz_in);
+	params.sInput.ucTransmitterID =
+		cmd_table_helper_encoder_id_to_atom(
+			display_graphics_object_id_get_encoder_id(
+				bp_params->encoder_object_id));
+	params.sInput.ucEncodeMode =
+		(uint8_t)cmd_table_helper_encoder_mode_bp_to_atom(
+			bp_params->signal_type, false);
+
+	if (bp_params->ss_enable == true)
+		params.sInput.ucDispPllConfig |= DISPPLL_CONFIG_SS_ENABLE;
+
+	if (bp_params->signal_type == SIGNAL_TYPE_DVI_DUAL_LINK)
+		params.sInput.ucDispPllConfig |= DISPPLL_CONFIG_DUAL_LINK;
+
+	if (EXEC_BIOS_CMD_TABLE(AdjustDisplayPll, params)) {
+		/* Convert output pixel clock back 10KHz-->KHz: multiply
+		 * original pixel clock in KHz by ratio
+		 * [output pxlClk/input pxlClk] */
+		uint64_t pixel_clk_10_khz_out =
+				(uint64_t)le32_to_cpu(params.sOutput.ulDispPllFreq);
+		uint64_t pixel_clk = (uint64_t)bp_params->pixel_clock;
+
+		if (pixel_clk_10_kHz_in != 0) {
+			bp_params->adjusted_pixel_clock =
+					div_u64(pixel_clk * pixel_clk_10_khz_out,
+							pixel_clk_10_kHz_in);
+		} else {
+			bp_params->adjusted_pixel_clock = 0;
+		}
+
+		bp_params->reference_divider = params.sOutput.ucRefDiv;
+		bp_params->pixel_clock_post_divider = params.sOutput.ucPostDiv;
+
+		result = BP_RESULT_OK;
+	}
+
+	return result;
+}
+
+static void init_adjust_display_pll(struct bios_parser *bp)
+{
+	switch (BIOS_CMD_TABLE_PARA_REVISION(AdjustDisplayPll)) {
+	case 2:
+		bp->cmd_tbl.adjust_display_pll = adjust_display_pll_v2;
+		break;
+	case 3:
+		bp->cmd_tbl.adjust_display_pll = adjust_display_pll_v3;
+		break;
+	default:
+		bp->cmd_tbl.adjust_display_pll = NULL;
+		break;
+	}
+}
 
 void display_bios_parser_init_cmd_tbl(struct bios_parser *bp)
 {
 	init_enable_crtc(bp);
 	init_blank_crtc(bp);
 	init_enable_disp_power_gating(bp);
+	init_adjust_display_pll(bp);
 }
