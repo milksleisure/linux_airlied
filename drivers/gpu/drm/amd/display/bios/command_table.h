@@ -43,6 +43,11 @@ struct cmd_tbl {
 	enum bp_result (*enable_spread_spectrum_on_ppll)(struct bios_parser *bp,
 							 struct bp_spread_spectrum_parameters *bp_params,
 							 bool enable);
+	enum signal_type (*dac_load_detection)(struct bios_parser *bp,
+					       struct graphics_object_id encoder,
+					       struct graphics_object_id connector,
+					       enum signal_type display_signal);
+
 };
 
 void display_bios_parser_init_cmd_tbl(struct bios_parser *bp);

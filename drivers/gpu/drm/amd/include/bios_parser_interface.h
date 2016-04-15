@@ -89,6 +89,10 @@ struct bp_spread_spectrum_parameters {
 	struct spread_spectrum_flags flags;
 };
 
+enum signal_type display_bios_dac_load_detect(struct display_bios *bios,
+					      struct graphics_object_id encoder,
+					      struct graphics_object_id connector,
+					      enum signal_type display_signaxl);
 enum bp_result display_bios_enable_crtc(struct display_bios *bios,
 					enum controller_id id,
 					bool enable);

@@ -193,6 +193,84 @@ static uint32_t cmd_table_helper_encoder_mode_bp_to_atom(
 }
 
 /*
+ * DAC LOAD DETECTION
+ */
+static enum signal_type dac_load_detection_v3(
+	struct bios_parser *bp,
+	struct graphics_object_id encoder,
+	struct graphics_object_id connector,
+	enum signal_type display_signal)
+{
+	DAC_LOAD_DETECTION_PS_ALLOCATION params;
+	enum signal_type signal = SIGNAL_TYPE_NONE;
+
+	memset(&params, 0, sizeof(params));
+
+	/* load detection is cupported for CRT, TV and CV */
+	switch (display_signal) {
+	case SIGNAL_TYPE_RGB:
+		switch (display_graphics_object_id_get_encoder_id(encoder)) {
+		case ENCODER_ID_INTERNAL_DAC1:
+		case ENCODER_ID_INTERNAL_KLDSCP_DAC1:
+			params.sDacload.usDeviceID =
+				cpu_to_le16(ATOM_DEVICE_CRT1_SUPPORT);
+			break;
+		case ENCODER_ID_INTERNAL_DAC2:
+		case ENCODER_ID_INTERNAL_KLDSCP_DAC2:
+			params.sDacload.usDeviceID =
+				cpu_to_le16(ATOM_DEVICE_CRT2_SUPPORT);
+			break;
+		default:
+			break;
+		}
+		break;
+		default:
+			return signal;
+	}
+
+	/* set the encoder to detect on */
+	switch (display_graphics_object_id_get_encoder_id(encoder)) {
+	case ENCODER_ID_INTERNAL_DAC1:
+	case ENCODER_ID_INTERNAL_KLDSCP_DAC1:
+		params.sDacload.ucDacType = ATOM_DAC_A;
+		break;
+	case ENCODER_ID_INTERNAL_DAC2:
+	case ENCODER_ID_INTERNAL_KLDSCP_DAC2:
+		params.sDacload.ucDacType = ATOM_DAC_B;
+		break;
+	default:
+		return signal;
+	}
+
+	if (!EXEC_BIOS_CMD_TABLE(DAC_LoadDetection, params))
+		return signal;
+#if 0 //TODO
+#if defined(CONFIG_DRM_AMD_DAL_VBIOS_PRESENT)
+	signal = bp->bios_helper->detect_sink(
+			bp->ctx,
+			encoder,
+			connector,
+			display_signal);
+#else
+	BREAK_TO_DEBUGGER(); /* VBios is needed */
+#endif
+#endif
+	return signal;
+}
+
+static void init_dac_load_detection(struct bios_parser *bp)
+{
+	switch (BIOS_CMD_TABLE_PARA_REVISION(DAC_LoadDetection)) {
+	case 3:
+		bp->cmd_tbl.dac_load_detection = dac_load_detection_v3;
+		break;
+	default:
+		bp->cmd_tbl.dac_load_detection = NULL;
+		break;
+	}
+}
+
+/*
  * ENABLE CRTC
  */
 static enum bp_result enable_crtc_v1(
@@ -597,9 +675,11 @@ static void init_enable_spread_spectrum_on_ppll(struct bios_parser *bp)
 	}
 }
 
+
 void display_bios_parser_init_cmd_tbl(struct bios_parser *bp)
 {
 	init_enable_crtc(bp);
+	init_dac_load_detection(bp);
 	init_blank_crtc(bp);
 	init_enable_disp_power_gating(bp);
 	init_adjust_display_pll(bp);

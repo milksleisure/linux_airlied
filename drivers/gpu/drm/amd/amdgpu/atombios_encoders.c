@@ -1433,47 +1433,20 @@ amdgpu_atombios_encoder_dac_load_detect(struct drm_encoder *encoder,
 	struct amdgpu_device *adev = dev->dev_private;
 	struct amdgpu_encoder *amdgpu_encoder = to_amdgpu_encoder(encoder);
 	struct amdgpu_connector *amdgpu_connector = to_amdgpu_connector(connector);
-	enum encoder_id enc_id = display_graphics_object_id_get_encoder_id(amdgpu_encoder->encoder_object_id);
+	enum signal_type signal = SIGNAL_TYPE_NONE;
 
 	if (amdgpu_encoder->devices & (ATOM_DEVICE_TV_SUPPORT |
 				       ATOM_DEVICE_CV_SUPPORT |
-				       ATOM_DEVICE_CRT_SUPPORT)) {
-		DAC_LOAD_DETECTION_PS_ALLOCATION args;
-		int index = GetIndexIntoMasterTable(COMMAND, DAC_LoadDetection);
-		uint8_t frev, crev;
+				       ATOM_DEVICE_CRT_SUPPORT))
+		signal = SIGNAL_TYPE_RGB;
 
-		memset(&args, 0, sizeof(args));
+	signal = display_bios_dac_load_detect(adev->dcb, amdgpu_encoder->encoder_object_id,
+					      amdgpu_connector->connector_object_id,
+					      signal);
 
-		if (!amdgpu_atom_parse_cmd_header(adev->mode_info.atom_context, index, &frev, &crev))
-			return false;
-
-		args.sDacload.ucMisc = 0;
-
-		if ((enc_id == ENCODER_ID_INTERNAL_DAC1) ||
-		    (enc_id == ENCODER_ID_INTERNAL_KLDSCP_DAC1))
-			args.sDacload.ucDacType = ATOM_DAC_A;
-		else
-			args.sDacload.ucDacType = ATOM_DAC_B;
-
-		if (amdgpu_connector->devices & ATOM_DEVICE_CRT1_SUPPORT)
-			args.sDacload.usDeviceID = cpu_to_le16(ATOM_DEVICE_CRT1_SUPPORT);
-		else if (amdgpu_connector->devices & ATOM_DEVICE_CRT2_SUPPORT)
-			args.sDacload.usDeviceID = cpu_to_le16(ATOM_DEVICE_CRT2_SUPPORT);
-		else if (amdgpu_connector->devices & ATOM_DEVICE_CV_SUPPORT) {
-			args.sDacload.usDeviceID = cpu_to_le16(ATOM_DEVICE_CV_SUPPORT);
-			if (crev >= 3)
-				args.sDacload.ucMisc = DAC_LOAD_MISC_YPrPb;
-		} else if (amdgpu_connector->devices & ATOM_DEVICE_TV1_SUPPORT) {
-			args.sDacload.usDeviceID = cpu_to_le16(ATOM_DEVICE_TV1_SUPPORT);
-			if (crev >= 3)
-				args.sDacload.ucMisc = DAC_LOAD_MISC_YPrPb;
-		}
-
-		amdgpu_atom_execute_table(adev->mode_info.atom_context, index, (uint32_t *)&args);
-
+	if (signal == SIGNAL_TYPE_RGB)
 		return true;
-	} else
-		return false;
+	return false;
 }
 
 enum drm_connector_status

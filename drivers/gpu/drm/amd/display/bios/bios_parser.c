@@ -113,3 +113,17 @@ enum bp_result display_bios_enable_spread_spectrum_on_ppll(struct display_bios *
 	return bp->cmd_tbl.enable_spread_spectrum_on_ppll(
 			bp, bp_params, enable);
 }
+
+enum signal_type display_bios_dac_load_detect(struct display_bios *dcb,
+					      struct graphics_object_id encoder,
+					      struct graphics_object_id connector,
+					      enum signal_type display_signal)
+{
+	struct bios_parser *bp = dcb_to_bp(dcb);
+
+	if (!bp->cmd_tbl.dac_load_detection)
+		return SIGNAL_TYPE_NONE;
+
+	return bp->cmd_tbl.dac_load_detection(bp, encoder, connector,
+					      display_signal);
+}
