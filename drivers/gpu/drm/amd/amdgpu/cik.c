@@ -1968,6 +1968,7 @@ static const struct amdgpu_ip_block_version kaveri_ip_blocks[] =
 
 int cik_set_ip_blocks(struct amdgpu_device *adev)
 {
+	adev->dce_version = DCE_VERSION_8_0;
 	switch (adev->asic_type) {
 	case CHIP_BONAIRE:
 		adev->ip_blocks = bonaire_ip_blocks;

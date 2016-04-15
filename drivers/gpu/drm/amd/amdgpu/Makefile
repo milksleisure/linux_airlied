@@ -96,6 +96,10 @@ amdgpu-y += \
 	../scheduler/sched_fence.o \
 	amdgpu_job.o
 
+amdgpu-y += \
+	../display/bios/bios_parser.o \
+	../display/bios/command_table.o
+
 # ACP componet
 ifneq ($(CONFIG_DRM_AMD_ACP),)
 amdgpu-y += amdgpu_acp.o

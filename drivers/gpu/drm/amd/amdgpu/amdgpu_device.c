@@ -839,6 +839,10 @@ static void amdgpu_atombios_fini(struct amdgpu_device *adev)
 	adev->mode_info.atom_context = NULL;
 	kfree(adev->mode_info.atom_card_info);
 	adev->mode_info.atom_card_info = NULL;
+
+	display_bios_parser_destroy(adev->dcb);
+	adev->dcb = NULL;
+	amdgpu_cgs_destroy_device(adev->bios_cgs);
 }
 
 /**
@@ -886,6 +890,19 @@ static int amdgpu_atombios_init(struct amdgpu_device *adev)
 	mutex_init(&adev->mode_info.atom_context->mutex);
 	amdgpu_atombios_scratch_regs_init(adev);
 	amdgpu_atom_allocate_fb_scratch(adev->mode_info.atom_context);
+
+	adev->bios_cgs = amdgpu_cgs_create_device(adev);
+	if (!adev->bios_cgs) {
+		amdgpu_atombios_fini(adev);
+		return -ENOMEM;
+	}
+
+	{
+		struct bp_init_data bp_init;
+		bp_init.cgs = adev->bios_cgs;
+		bp_init.bios = adev->bios;
+		adev->dcb = display_bios_parser_create(&bp_init, adev->dce_version);
+	}
 	return 0;
 }
 

@@ -57,6 +57,7 @@
 
 #include "gpu_scheduler.h"
 
+#include "bios_parser_interface.h"
 /*
  * Modules parameters.
  */
@@ -1933,6 +1934,9 @@ struct amdgpu_device {
 	bool				is_atom_bios;
 	struct amdgpu_bo		*stollen_vga_memory;
 	uint32_t			bios_scratch[AMDGPU_BIOS_NUM_SCRATCH];
+	struct display_bios		*dcb;
+	struct cgs_device		*bios_cgs;
+	enum dce_version		dce_version;
 
 	/* Register/doorbell mmio */
 	resource_size_t			rmmio_base;
