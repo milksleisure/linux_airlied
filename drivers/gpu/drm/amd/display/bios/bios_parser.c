@@ -53,3 +53,15 @@ void display_bios_parser_destroy(struct display_bios *dcb)
 
 	kfree(bp);
 }
+
+enum bp_result display_bios_enable_crtc(struct display_bios *dcb,
+					enum controller_id id,
+					bool enable)
+{
+	struct bios_parser *bp = dcb_to_bp(dcb);
+
+	if (!bp->cmd_tbl.enable_crtc)
+		return BP_RESULT_FAILURE;
+
+	return bp->cmd_tbl.enable_crtc(bp, id, enable);
+}

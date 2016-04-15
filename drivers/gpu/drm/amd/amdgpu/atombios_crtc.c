@@ -131,15 +131,11 @@ void amdgpu_atombios_crtc_enable(struct drm_crtc *crtc, int state)
 	struct amdgpu_crtc *amdgpu_crtc = to_amdgpu_crtc(crtc);
 	struct drm_device *dev = crtc->dev;
 	struct amdgpu_device *adev = dev->dev_private;
-	int index = GetIndexIntoMasterTable(COMMAND, EnableCRTC);
-	ENABLE_CRTC_PS_ALLOCATION args;
 	enum controller_id controller_id = display_graphics_object_id_get_controller_id(amdgpu_crtc->crtc_object_id);
-	memset(&args, 0, sizeof(args));
-
-	args.ucCRTC = controller_id;
-	args.ucEnable = state;
-
-	amdgpu_atom_execute_table(adev->mode_info.atom_context, index, (uint32_t *)&args);
+	enum bp_result res;
+	res = display_bios_enable_crtc(adev->dcb, controller_id, state);
+	if (res)
+		DRM_ERROR("bios call failed: %d\n", res);
 }
 
 void amdgpu_atombios_crtc_blank(struct drm_crtc *crtc, int state)

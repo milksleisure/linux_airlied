@@ -27,10 +27,112 @@
 #include "bios_parser_interface.h"
 #include "bios_parser.h"
 #include "command_table.h"
+#include "cgs_linux.h"
 
+#define EXEC_BIOS_CMD_TABLE(command, params)\
+	(cgs_atom_exec_cmd_table(bp->cgs, \
+		GetIndexIntoMasterTable(COMMAND, command), \
+		&params) == 0)
+
+#define BIOS_CMD_TABLE_REVISION(command, frev, crev)\
+	cgs_atom_get_cmd_table_revs(bp->cgs, \
+		GetIndexIntoMasterTable(COMMAND, command), &frev, &crev)
+
+#define BIOS_CMD_TABLE_PARA_REVISION(command)\
+	bios_cmd_table_para_revision(bp->cgs, \
+		GetIndexIntoMasterTable(COMMAND, command))
+
+static uint32_t bios_cmd_table_para_revision(void *cgs_device,
+					     uint32_t index)
+{
+	uint8_t frev, crev;
+
+	if (cgs_atom_get_cmd_table_revs(cgs_device,
+					index,
+					&frev, &crev) != 0)
+		return 0;
+	return crev;
+}
+
+static bool cmd_table_helper_controller_id_to_atom(enum controller_id id,
+						   uint8_t *atom_id)
+{
+	if (atom_id == NULL) {
+		return false;
+	}
+
+	switch (id) {
+	case CONTROLLER_ID_D0:
+		*atom_id = ATOM_CRTC1;
+		return true;
+	case CONTROLLER_ID_D1:
+		*atom_id = ATOM_CRTC2;
+		return true;
+	case CONTROLLER_ID_D2:
+		*atom_id = ATOM_CRTC3;
+		return true;
+	case CONTROLLER_ID_D3:
+		*atom_id = ATOM_CRTC4;
+		return true;
+	case CONTROLLER_ID_D4:
+		*atom_id = ATOM_CRTC5;
+		return true;
+	case CONTROLLER_ID_D5:
+		*atom_id = ATOM_CRTC6;
+		return true;
+	case CONTROLLER_ID_UNDERLAY0:
+		*atom_id = ATOM_UNDERLAY_PIPE0;
+		return true;
+	case CONTROLLER_ID_UNDEFINED:
+		*atom_id = ATOM_CRTC_INVALID;
+		return true;
+	default:
+		/* Wrong controller id */
+		return false;
+	}
+}
+
+/*
+ * ENABLE CRTC
+ */
+static enum bp_result enable_crtc_v1(
+	struct bios_parser *bp,
+	enum controller_id controller_id,
+	bool enable)
+{
+	bool result = BP_RESULT_FAILURE;
+	ENABLE_CRTC_PARAMETERS params = {0};
+	uint8_t id;
+
+	if (cmd_table_helper_controller_id_to_atom(controller_id, &id))
+		params.ucCRTC = id;
+	else
+		return BP_RESULT_BADINPUT;
+
+	if (enable)
+		params.ucEnable = ATOM_ENABLE;
+	else
+		params.ucEnable = ATOM_DISABLE;
+
+	if (EXEC_BIOS_CMD_TABLE(EnableCRTC, params))
+		result = BP_RESULT_OK;
+
+	return result;
+}
+
+static void init_enable_crtc(struct bios_parser *bp)
+{
+	switch (BIOS_CMD_TABLE_PARA_REVISION(EnableCRTC)) {
+	case 1:
+		bp->cmd_tbl.enable_crtc = enable_crtc_v1;
+		break;
+	default:
+		bp->cmd_tbl.enable_crtc = NULL;
+		break;
+	}
+}
 
 void display_bios_parser_init_cmd_tbl(struct bios_parser *bp)
 {
-
-
+	init_enable_crtc(bp);
 }
