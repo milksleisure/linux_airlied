@@ -59,6 +59,36 @@ struct bp_adjust_pixel_clock_parameters {
 	bool ss_enable;
 };
 
+struct spread_spectrum_flags {
+	/* 1 = Center Spread; 0 = down spread */
+	uint32_t CENTER_SPREAD:1;
+	/* 1 = external; 0 = internal */
+	uint32_t EXTERNAL_SS:1;
+	/* 1 = delta-sigma type parameter; 0 = ver1 */
+	uint32_t DS_TYPE:1;
+};
+
+struct bp_spread_spectrum_parameters {
+	enum clock_source_id pll_id;
+	uint32_t percentage;
+	uint32_t ds_frac_amount;
+
+	union {
+		struct {
+			uint32_t step;
+			uint32_t delay;
+			uint32_t range; /* In Hz unit */
+		} ver1;
+		struct {
+			uint32_t feedback_amount;
+			uint32_t nfrac_amount;
+			uint32_t ds_frac_size;
+		} ds;
+	};
+
+	struct spread_spectrum_flags flags;
+};
+
 enum bp_result display_bios_enable_crtc(struct display_bios *bios,
 					enum controller_id id,
 					bool enable);
@@ -70,4 +100,7 @@ enum bp_result display_bios_enable_disp_power_gating(struct display_bios *bios,
 						     enum bp_pipe_control_action action);
 enum bp_result display_bios_adjust_pixel_clock(struct display_bios *bios,
 					       struct bp_adjust_pixel_clock_parameters *bp_params);
+enum bp_result display_bios_enable_spread_spectrum_on_ppll(struct display_bios *bios,
+							   struct bp_spread_spectrum_parameters *bp_params,
+							   bool enable);
 #endif

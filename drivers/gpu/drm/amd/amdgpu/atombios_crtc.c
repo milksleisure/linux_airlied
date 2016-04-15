@@ -236,7 +236,10 @@ static void amdgpu_atombios_crtc_program_ss(struct amdgpu_device *adev,
 	unsigned i;
 	int index = GetIndexIntoMasterTable(COMMAND, EnableSpreadSpectrumOnPPLL);
 	union atom_enable_ss args;
+	struct bp_spread_spectrum_parameters bp_params;
 	enum controller_id controller_id = display_graphics_object_id_get_controller_id(crtc_object_id);
+
+	memset(&bp_params, 0, sizeof(bp_params));
 
 	if (enable) {
 		/* Don't mess with SS if percentage is 0 or external ss.
@@ -263,6 +266,17 @@ static void amdgpu_atombios_crtc_program_ss(struct amdgpu_device *adev,
 		}
 	}
 
+	/* TODO use clock_source_id higher up */
+	bp_params.pll_id = pll_id;
+	bp_params.ds_frac_amount = 0;
+	bp_params.percentage = ss->percentage;
+	bp_params.ver1.step = ss->step;
+
+	if (ss->type & ATOM_SS_CENTRE_SPREAD_MODE_MASK)
+		bp_params.flags.CENTER_SPREAD = 1;
+	if (ss->type & ATOM_EXTERNAL_SS_MASK)
+		bp_params.flags.EXTERNAL_SS = 1;
+
 	memset(&args, 0, sizeof(args));
 
 	args.v3.usSpreadSpectrumAmountFrac = cpu_to_le16(0);
@@ -280,7 +294,6 @@ static void amdgpu_atombios_crtc_program_ss(struct amdgpu_device *adev,
 	case ATOM_PPLL_INVALID:
 		return;
 	}
-	args.v3.usSpreadSpectrumAmount = cpu_to_le16(ss->amount);
 	args.v3.usSpreadSpectrumStep = cpu_to_le16(ss->step);
 	args.v3.ucEnable = enable;
 

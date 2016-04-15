@@ -100,3 +100,16 @@ enum bp_result display_bios_adjust_pixel_clock(struct display_bios *dcb,
 
 	return bp->cmd_tbl.adjust_display_pll(bp, bp_params);
 }
+
+enum bp_result display_bios_enable_spread_spectrum_on_ppll(struct display_bios *dcb,
+							   struct bp_spread_spectrum_parameters *bp_params,
+							   bool enable)
+{
+	struct bios_parser *bp = dcb_to_bp(dcb);
+
+	if (!bp->cmd_tbl.enable_spread_spectrum_on_ppll)
+		return BP_RESULT_FAILURE;
+
+	return bp->cmd_tbl.enable_spread_spectrum_on_ppll(
+			bp, bp_params, enable);
+}

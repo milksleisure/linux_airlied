@@ -40,6 +40,9 @@ struct cmd_tbl {
 						   enum bp_pipe_control_action action);
 	enum bp_result (*adjust_display_pll)(struct bios_parser *bp,
 					     struct bp_adjust_pixel_clock_parameters *bp_params);
+	enum bp_result (*enable_spread_spectrum_on_ppll)(struct bios_parser *bp,
+							 struct bp_spread_spectrum_parameters *bp_params,
+							 bool enable);
 };
 
 void display_bios_parser_init_cmd_tbl(struct bios_parser *bp);

@@ -412,10 +412,196 @@ static void init_adjust_display_pll(struct bios_parser *bp)
 	}
 }
 
+/*
+ * ENABLE PIXEL CLOCK SS
+ */
+
+static enum bp_result enable_spread_spectrum_on_ppll_v1(
+	struct bios_parser *bp,
+	struct bp_spread_spectrum_parameters *bp_params,
+	bool enable)
+{
+	enum bp_result result = BP_RESULT_FAILURE;
+	ENABLE_SPREAD_SPECTRUM_ON_PPLL params;
+
+	memset(&params, 0, sizeof(params));
+
+	if ((enable == true) && (bp_params->percentage > 0))
+		params.ucEnable = ATOM_ENABLE;
+	else
+		params.ucEnable = ATOM_DISABLE;
+
+	params.usSpreadSpectrumPercentage =
+			cpu_to_le16((uint16_t)bp_params->percentage);
+	params.ucSpreadSpectrumStep =
+			(uint8_t)bp_params->ver1.step;
+	params.ucSpreadSpectrumDelay =
+			(uint8_t)bp_params->ver1.delay;
+	/* convert back to unit of 10KHz */
+	params.ucSpreadSpectrumRange =
+			(uint8_t)(bp_params->ver1.range / 10000);
+
+	if (bp_params->flags.EXTERNAL_SS)
+		params.ucSpreadSpectrumType |= ATOM_EXTERNAL_SS_MASK;
+
+	if (bp_params->flags.CENTER_SPREAD)
+		params.ucSpreadSpectrumType |= ATOM_SS_CENTRE_SPREAD_MODE;
+
+	if (bp_params->pll_id == CLOCK_SOURCE_ID_PLL1)
+		params.ucPpll = ATOM_PPLL1;
+	else if (bp_params->pll_id == CLOCK_SOURCE_ID_PLL2)
+		params.ucPpll = ATOM_PPLL2;
+
+	if (EXEC_BIOS_CMD_TABLE(EnableSpreadSpectrumOnPPLL, params))
+		result = BP_RESULT_OK;
+
+	return result;
+}
+
+static enum bp_result enable_spread_spectrum_on_ppll_v2(
+	struct bios_parser *bp,
+	struct bp_spread_spectrum_parameters *bp_params,
+	bool enable)
+{
+	enum bp_result result = BP_RESULT_FAILURE;
+	ENABLE_SPREAD_SPECTRUM_ON_PPLL_V2 params;
+
+	memset(&params, 0, sizeof(params));
+
+	if (bp_params->pll_id == CLOCK_SOURCE_ID_PLL1)
+		params.ucSpreadSpectrumType = ATOM_PPLL_SS_TYPE_V2_P1PLL;
+	else if (bp_params->pll_id == CLOCK_SOURCE_ID_PLL2)
+		params.ucSpreadSpectrumType = ATOM_PPLL_SS_TYPE_V2_P2PLL;
+
+	if ((enable == true) && (bp_params->percentage > 0)) {
+		params.ucEnable = ATOM_ENABLE;
+
+		params.usSpreadSpectrumPercentage =
+				cpu_to_le16((uint16_t)(bp_params->percentage));
+		params.usSpreadSpectrumStep =
+				cpu_to_le16((uint16_t)(bp_params->ds.ds_frac_size));
+
+		if (bp_params->flags.EXTERNAL_SS)
+			params.ucSpreadSpectrumType |=
+					ATOM_PPLL_SS_TYPE_V2_EXT_SPREAD;
+
+		if (bp_params->flags.CENTER_SPREAD)
+			params.ucSpreadSpectrumType |=
+					ATOM_PPLL_SS_TYPE_V2_CENTRE_SPREAD;
+
+		/* Both amounts need to be left shifted first before bit
+		 * comparison. Otherwise, the result will always be zero here
+		 */
+		params.usSpreadSpectrumAmount = cpu_to_le16((uint16_t)(
+				((bp_params->ds.feedback_amount <<
+						ATOM_PPLL_SS_AMOUNT_V2_FBDIV_SHIFT) &
+						ATOM_PPLL_SS_AMOUNT_V2_FBDIV_MASK) |
+						((bp_params->ds.nfrac_amount <<
+								ATOM_PPLL_SS_AMOUNT_V2_NFRAC_SHIFT) &
+								ATOM_PPLL_SS_AMOUNT_V2_NFRAC_MASK)));
+	} else
+		params.ucEnable = ATOM_DISABLE;
+
+	if (EXEC_BIOS_CMD_TABLE(EnableSpreadSpectrumOnPPLL, params))
+		result = BP_RESULT_OK;
+
+	return result;
+}
+
+static enum bp_result enable_spread_spectrum_on_ppll_v3(
+	struct bios_parser *bp,
+	struct bp_spread_spectrum_parameters *bp_params,
+	bool enable)
+{
+	enum bp_result result = BP_RESULT_FAILURE;
+	ENABLE_SPREAD_SPECTRUM_ON_PPLL_V3 params;
+
+	memset(&params, 0, sizeof(params));
+
+	switch (bp_params->pll_id) {
+	case CLOCK_SOURCE_ID_PLL0:
+		/* ATOM_PPLL_SS_TYPE_V3_P0PLL; this is pixel clock only,
+		 * not for SI display clock.
+		 */
+		params.ucSpreadSpectrumType = ATOM_PPLL_SS_TYPE_V3_DCPLL;
+		break;
+	case CLOCK_SOURCE_ID_PLL1:
+		params.ucSpreadSpectrumType = ATOM_PPLL_SS_TYPE_V3_P1PLL;
+		break;
+
+	case CLOCK_SOURCE_ID_PLL2:
+		params.ucSpreadSpectrumType = ATOM_PPLL_SS_TYPE_V3_P2PLL;
+		break;
+
+	case CLOCK_SOURCE_ID_DCPLL:
+		params.ucSpreadSpectrumType = ATOM_PPLL_SS_TYPE_V3_DCPLL;
+		break;
+
+	default:
+		/* Unexpected PLL value!! */
+		return result;
+	}
+
+	if (enable == true) {
+		params.ucEnable = ATOM_ENABLE;
+
+		params.usSpreadSpectrumAmountFrac =
+				cpu_to_le16((uint16_t)(bp_params->ds_frac_amount));
+		params.usSpreadSpectrumStep =
+				cpu_to_le16((uint16_t)(bp_params->ds.ds_frac_size));
+
+		if (bp_params->flags.EXTERNAL_SS)
+			params.ucSpreadSpectrumType |=
+					ATOM_PPLL_SS_TYPE_V3_EXT_SPREAD;
+		if (bp_params->flags.CENTER_SPREAD)
+			params.ucSpreadSpectrumType |=
+					ATOM_PPLL_SS_TYPE_V3_CENTRE_SPREAD;
+
+		/* Both amounts need to be left shifted first before bit
+		 * comparison. Otherwise, the result will always be zero here
+		 */
+		params.usSpreadSpectrumAmount = cpu_to_le16((uint16_t)(
+				((bp_params->ds.feedback_amount <<
+						ATOM_PPLL_SS_AMOUNT_V3_FBDIV_SHIFT) &
+						ATOM_PPLL_SS_AMOUNT_V3_FBDIV_MASK) |
+						((bp_params->ds.nfrac_amount <<
+								ATOM_PPLL_SS_AMOUNT_V3_NFRAC_SHIFT) &
+								ATOM_PPLL_SS_AMOUNT_V3_NFRAC_MASK)));
+	} else
+		params.ucEnable = ATOM_DISABLE;
+
+	if (EXEC_BIOS_CMD_TABLE(EnableSpreadSpectrumOnPPLL, params))
+		result = BP_RESULT_OK;
+
+	return result;
+}
+
+static void init_enable_spread_spectrum_on_ppll(struct bios_parser *bp)
+{
+	switch (BIOS_CMD_TABLE_PARA_REVISION(EnableSpreadSpectrumOnPPLL)) {
+	case 1:
+		bp->cmd_tbl.enable_spread_spectrum_on_ppll =
+				enable_spread_spectrum_on_ppll_v1;
+		break;
+	case 2:
+		bp->cmd_tbl.enable_spread_spectrum_on_ppll =
+				enable_spread_spectrum_on_ppll_v2;
+		break;
+	case 3:
+		bp->cmd_tbl.enable_spread_spectrum_on_ppll =
+				enable_spread_spectrum_on_ppll_v3;
+		break;
+	default:
+		bp->cmd_tbl.enable_spread_spectrum_on_ppll = NULL;
+		break;
+	}
+}
+
 void display_bios_parser_init_cmd_tbl(struct bios_parser *bp)
 {
 	init_enable_crtc(bp);
 	init_blank_crtc(bp);
 	init_enable_disp_power_gating(bp);
 	init_adjust_display_pll(bp);
+	init_enable_spread_spectrum_on_ppll(bp);
 }
