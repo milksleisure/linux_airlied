@@ -413,72 +413,22 @@ static u32 amdgpu_atombios_crtc_adjust_pll(struct drm_crtc *crtc,
 	return adjusted_clock;
 }
 
-union set_pixel_clock {
-	SET_PIXEL_CLOCK_PS_ALLOCATION base;
-	PIXEL_CLOCK_PARAMETERS v1;
-	PIXEL_CLOCK_PARAMETERS_V2 v2;
-	PIXEL_CLOCK_PARAMETERS_V3 v3;
-	PIXEL_CLOCK_PARAMETERS_V5 v5;
-	PIXEL_CLOCK_PARAMETERS_V6 v6;
-};
-
 /* on DCE5, make sure the voltage is high enough to support the
  * required disp clk.
  */
 void amdgpu_atombios_crtc_set_disp_eng_pll(struct amdgpu_device *adev,
-				    u32 dispclk)
+					   u32 dispclk)
 {
-	u8 frev, crev;
-	int index;
-	union set_pixel_clock args;
+	struct bp_pixel_clock_parameters bp_params;
+	enum bp_result res;
+	memset(&bp_params, 0, sizeof(bp_params));
 
-	memset(&args, 0, sizeof(args));
-
-	index = GetIndexIntoMasterTable(COMMAND, SetPixelClock);
-	if (!amdgpu_atom_parse_cmd_header(adev->mode_info.atom_context, index, &frev,
-				   &crev))
-		return;
-
-	switch (frev) {
-	case 1:
-		switch (crev) {
-		case 5:
-			/* if the default dcpll clock is specified,
-			 * SetPixelClock provides the dividers
-			 */
-			args.v5.ucCRTC = ATOM_CRTC_INVALID;
-			args.v5.usPixelClock = cpu_to_le16(dispclk);
-			args.v5.ucPpll = ATOM_DCPLL;
-			break;
-		case 6:
-			/* if the default dcpll clock is specified,
-			 * SetPixelClock provides the dividers
-			 */
-			args.v6.ulDispEngClkFreq = cpu_to_le32(dispclk);
-			args.v6.ucPpll = ATOM_EXT_PLL1;
-			break;
-		default:
-			DRM_ERROR("Unknown table version %d %d\n", frev, crev);
-			return;
-		}
-		break;
-	default:
-		DRM_ERROR("Unknown table version %d %d\n", frev, crev);
-		return;
-	}
-	amdgpu_atom_execute_table(adev->mode_info.atom_context, index, (uint32_t *)&args);
-}
-
-static bool is_pixel_clock_source_from_pll(u32 encoder_mode, int pll_id)
-{
-	if (ENCODER_MODE_IS_DP(encoder_mode)) {
-		if (pll_id < ATOM_EXT_PLL1)
-			return true;
-		else
-			return false;
-	} else {
-		return true;
-	}
+	bp_params.pll_id = CLOCK_SOURCE_ID_PLL0;
+	bp_params.target_pixel_clock = dispclk * 10;
+	res = display_bios_program_display_engine_pll(adev->dcb,
+						      &bp_params);
+	if (res)
+		DRM_ERROR("bios call failed: %d\n", res);
 }
 
 void amdgpu_atombios_crtc_program_pll(struct drm_crtc *crtc,
@@ -497,133 +447,40 @@ void amdgpu_atombios_crtc_program_pll(struct drm_crtc *crtc,
 {
 	struct drm_device *dev = crtc->dev;
 	struct amdgpu_device *adev = dev->dev_private;
-	u8 frev, crev;
-	int index = GetIndexIntoMasterTable(COMMAND, SetPixelClock);
-	union set_pixel_clock args;
-	uint8_t atom_enc_id = amdgpu_encoder_object_to_atom(encoder_object_id);
 	enum controller_id controller_id = display_graphics_object_id_get_controller_id(crtc_object_id);
+	struct bp_pixel_clock_parameters bp_params;
+	enum bp_result res;
+	bool is_duallink = false;
+	memset(&bp_params, 0, sizeof(bp_params));
 
-	memset(&args, 0, sizeof(args));
-
-	if (!amdgpu_atom_parse_cmd_header(adev->mode_info.atom_context, index, &frev,
-				   &crev))
-		return;
-
-	switch (frev) {
-	case 1:
-		switch (crev) {
-		case 1:
-			if (clock == ATOM_DISABLE)
-				return;
-			args.v1.usPixelClock = cpu_to_le16(clock / 10);
-			args.v1.usRefDiv = cpu_to_le16(ref_div);
-			args.v1.usFbDiv = cpu_to_le16(fb_div);
-			args.v1.ucFracFbDiv = frac_fb_div;
-			args.v1.ucPostDiv = post_div;
-			args.v1.ucPpll = pll_id;
-			args.v1.ucCRTC = controller_id;
-			args.v1.ucRefDivSrc = 1;
-			break;
-		case 2:
-			args.v2.usPixelClock = cpu_to_le16(clock / 10);
-			args.v2.usRefDiv = cpu_to_le16(ref_div);
-			args.v2.usFbDiv = cpu_to_le16(fb_div);
-			args.v2.ucFracFbDiv = frac_fb_div;
-			args.v2.ucPostDiv = post_div;
-			args.v2.ucPpll = pll_id;
-			args.v2.ucCRTC = controller_id;
-			args.v2.ucRefDivSrc = 1;
-			break;
-		case 3:
-			args.v3.usPixelClock = cpu_to_le16(clock / 10);
-			args.v3.usRefDiv = cpu_to_le16(ref_div);
-			args.v3.usFbDiv = cpu_to_le16(fb_div);
-			args.v3.ucFracFbDiv = frac_fb_div;
-			args.v3.ucPostDiv = post_div;
-			args.v3.ucPpll = pll_id;
-			if (controller_id == ATOM_CRTC2)
-				args.v3.ucMiscInfo = PIXEL_CLOCK_MISC_CRTC_SEL_CRTC2;
-			else
-				args.v3.ucMiscInfo = PIXEL_CLOCK_MISC_CRTC_SEL_CRTC1;
-			if (ss_enabled && (ss->type & ATOM_EXTERNAL_SS_MASK))
-				args.v3.ucMiscInfo |= PIXEL_CLOCK_MISC_REF_DIV_SRC;
-			args.v3.ucTransmitterId = atom_enc_id;
-			args.v3.ucEncoderMode = encoder_mode;
-			break;
-		case 5:
-			args.v5.ucCRTC = controller_id;
-			args.v5.usPixelClock = cpu_to_le16(clock / 10);
-			args.v5.ucRefDiv = ref_div;
-			args.v5.usFbDiv = cpu_to_le16(fb_div);
-			args.v5.ulFbDivDecFrac = cpu_to_le32(frac_fb_div * 100000);
-			args.v5.ucPostDiv = post_div;
-			args.v5.ucMiscInfo = 0; /* HDMI depth, etc. */
-			if ((ss_enabled && (ss->type & ATOM_EXTERNAL_SS_MASK)) &&
-			    (pll_id < ATOM_EXT_PLL1))
-				args.v5.ucMiscInfo |= PIXEL_CLOCK_V5_MISC_REF_DIV_SRC;
-			if (encoder_mode == ATOM_ENCODER_MODE_HDMI) {
-				switch (bpc) {
-				case 8:
-				default:
-					args.v5.ucMiscInfo |= PIXEL_CLOCK_V5_MISC_HDMI_24BPP;
-					break;
-				case 10:
-					/* yes this is correct, the atom define is wrong */
-					args.v5.ucMiscInfo |= PIXEL_CLOCK_V5_MISC_HDMI_32BPP;
-					break;
-				case 12:
-					/* yes this is correct, the atom define is wrong */
-					args.v5.ucMiscInfo |= PIXEL_CLOCK_V5_MISC_HDMI_30BPP;
-					break;
-				}
-			}
-			args.v5.ucTransmitterID = atom_enc_id;
-			args.v5.ucEncoderMode = encoder_mode;
-			args.v5.ucPpll = pll_id;
-			break;
-		case 6:
-			args.v6.ulDispEngClkFreq = cpu_to_le32(controller_id << 24 | clock / 10);
-			args.v6.ucRefDiv = ref_div;
-			args.v6.usFbDiv = cpu_to_le16(fb_div);
-			args.v6.ulFbDivDecFrac = cpu_to_le32(frac_fb_div * 100000);
-			args.v6.ucPostDiv = post_div;
-			args.v6.ucMiscInfo = 0; /* HDMI depth, etc. */
-			if ((ss_enabled && (ss->type & ATOM_EXTERNAL_SS_MASK)) &&
-			    (pll_id < ATOM_EXT_PLL1) &&
-			    !is_pixel_clock_source_from_pll(encoder_mode, pll_id))
-				args.v6.ucMiscInfo |= PIXEL_CLOCK_V6_MISC_REF_DIV_SRC;
-			if (encoder_mode == ATOM_ENCODER_MODE_HDMI) {
-				switch (bpc) {
-				case 8:
-				default:
-					args.v6.ucMiscInfo |= PIXEL_CLOCK_V6_MISC_HDMI_24BPP;
-					break;
-				case 10:
-					args.v6.ucMiscInfo |= PIXEL_CLOCK_V6_MISC_HDMI_30BPP_V6;
-					break;
-				case 12:
-					args.v6.ucMiscInfo |= PIXEL_CLOCK_V6_MISC_HDMI_36BPP_V6;
-					break;
-				case 16:
-					args.v6.ucMiscInfo |= PIXEL_CLOCK_V6_MISC_HDMI_48BPP;
-					break;
-				}
-			}
-			args.v6.ucTransmitterID = atom_enc_id;
-			args.v6.ucEncoderMode = encoder_mode;
-			args.v6.ucPpll = pll_id;
-			break;
-		default:
-			DRM_ERROR("Unknown table version %d %d\n", frev, crev);
-			return;
-		}
+	bp_params.controller_id = controller_id;
+	bp_params.encoder_object_id = encoder_object_id;
+	bp_params.target_pixel_clock = clock;
+	bp_params.reference_divider = ref_div;
+	bp_params.feedback_divider = fb_div;
+	bp_params.fractional_feedback_divider = frac_fb_div;
+	bp_params.pixel_clock_post_divider = post_div;
+	bp_params.signal_type = encoder_mode_to_signal_type(encoder_mode, is_duallink);
+	/* TODO */
+	bp_params.pll_id = pll_id;
+	switch (bpc) {
+	case 8:
+		bp_params.color_depth = TRANSMITTER_COLOR_DEPTH_24;
 		break;
-	default:
-		DRM_ERROR("Unknown table version %d %d\n", frev, crev);
-		return;
+	case 10:
+		bp_params.color_depth = TRANSMITTER_COLOR_DEPTH_30;
+		break;
+	case 12:
+		bp_params.color_depth = TRANSMITTER_COLOR_DEPTH_36;
+		break;
+	case 16:
+		bp_params.color_depth = TRANSMITTER_COLOR_DEPTH_48;
+		break;
 	}
-
-	amdgpu_atom_execute_table(adev->mode_info.atom_context, index, (uint32_t *)&args);
+	res = display_bios_program_display_engine_pll(adev->dcb,
+						      &bp_params);
+	if (res)
+		DRM_ERROR("bios call failed: %d\n", res);	
 }
 
 int amdgpu_atombios_crtc_prepare_pll(struct drm_crtc *crtc,
