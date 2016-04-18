@@ -59,6 +59,47 @@ struct bp_adjust_pixel_clock_parameters {
 	bool ss_enable;
 };
 
+struct bp_pixel_clock_parameters {
+	enum controller_id controller_id; /* (Which CRTC uses this PLL) */
+	enum clock_source_id pll_id; /* Clock Source Id */
+	/* signal_type -> Encoder Mode - needed by VBIOS Exec table */
+	enum signal_type signal_type;
+	/* Adjusted Pixel Clock (after VBIOS exec table)
+	 * that becomes Target Pixel Clock (KHz) */
+	uint32_t target_pixel_clock;
+	/* Calculated Reference divider of Display PLL */
+	uint32_t reference_divider;
+	/* Calculated Feedback divider of Display PLL */
+	uint32_t feedback_divider;
+	/* Calculated Fractional Feedback divider of Display PLL */
+	uint32_t fractional_feedback_divider;
+	/* Calculated Pixel Clock Post divider of Display PLL */
+	uint32_t pixel_clock_post_divider;
+	struct graphics_object_id encoder_object_id; /* Encoder object id */
+	/* VBIOS returns a fixed display clock when DFS-bypass feature
+	 * is enabled (KHz) */
+	uint32_t dfs_bypass_display_clock;
+	/* color depth to support HDMI deep color */
+	enum transmitter_color_depth color_depth;
+
+	struct program_pixel_clock_flags {
+		uint32_t FORCE_PROGRAMMING_OF_PLL:1;
+		/* Use Engine Clock as source for Display Clock when
+		 * programming PLL */
+		uint32_t USE_E_CLOCK_AS_SOURCE_FOR_D_CLOCK:1;
+		/* Use external reference clock (refDivSrc for PLL) */
+		uint32_t SET_EXTERNAL_REF_DIV_SRC:1;
+		/* Force program PHY PLL only */
+		uint32_t PROGRAM_PHY_PLL_ONLY:1;
+		/* Support for YUV420 */
+		uint32_t SUPPORT_YUV_420:1;
+		/* Use XTALIN reference clock source */
+		uint32_t SET_XTALIN_REF_SRC:1;
+		/* Use GENLK reference clock source */
+		uint32_t SET_GENLOCK_REF_DIV_SRC:1;
+	} flags;
+};
+
 struct spread_spectrum_flags {
 	/* 1 = Center Spread; 0 = down spread */
 	uint32_t CENTER_SPREAD:1;
@@ -99,9 +140,14 @@ enum bp_result display_bios_enable_crtc(struct display_bios *bios,
 enum bp_result display_bios_blank_crtc(struct display_bios *bios,
 				       struct bp_blank_crtc_parameters *bp_params,
 				       bool blank);
+enum bp_result display_bios_program_display_engine_pll(struct display_bios *bios,
+						       struct bp_pixel_clock_parameters *bp_params);
+
 enum bp_result display_bios_enable_disp_power_gating(struct display_bios *bios,
 						     enum controller_id controller_id,
 						     enum bp_pipe_control_action action);
+enum bp_result display_bios_set_pixel_clock(struct display_bios *dcb,
+					    struct bp_pixel_clock_parameters *bp_params);
 enum bp_result display_bios_adjust_pixel_clock(struct display_bios *bios,
 					       struct bp_adjust_pixel_clock_parameters *bp_params);
 enum bp_result display_bios_enable_spread_spectrum_on_ppll(struct display_bios *bios,

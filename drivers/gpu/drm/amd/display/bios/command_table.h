@@ -42,6 +42,8 @@ struct cmd_tbl {
 	enum bp_result (*enable_disp_power_gating)(struct bios_parser *bp,
 						   enum controller_id crtc_id,
 						   enum bp_pipe_control_action action);
+	enum bp_result (*set_pixel_clock)(struct bios_parser *bp,
+					  struct bp_pixel_clock_parameters *bp_params);
 	enum bp_result (*adjust_display_pll)(struct bios_parser *bp,
 					     struct bp_adjust_pixel_clock_parameters *bp_params);
 	enum bp_result (*enable_spread_spectrum_on_ppll)(struct bios_parser *bp,
@@ -51,7 +53,8 @@ struct cmd_tbl {
 					       struct graphics_object_id encoder,
 					       struct graphics_object_id connector,
 					       enum signal_type display_signal);
-
+	enum bp_result (*program_clock)(struct bios_parser *bp,
+					struct bp_pixel_clock_parameters *bp_params);
 };
 
 void display_bios_parser_init_cmd_tbl(struct bios_parser *bp);

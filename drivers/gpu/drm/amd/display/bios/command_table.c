@@ -196,6 +196,312 @@ static uint32_t cmd_table_helper_encoder_mode_bp_to_atom(
 }
 
 /*
+ *
+ * SET PIXEL CLOCK
+ *
+ */
+
+
+static enum bp_result set_pixel_clock_v3(
+	struct bios_parser *bp,
+	struct bp_pixel_clock_parameters *bp_params)
+{
+	enum bp_result result = BP_RESULT_FAILURE;
+	PIXEL_CLOCK_PARAMETERS_V3 *params;
+	SET_PIXEL_CLOCK_PS_ALLOCATION allocation;
+
+	memset(&allocation, 0, sizeof(allocation));
+
+	if (CLOCK_SOURCE_ID_PLL1 == bp_params->pll_id)
+		allocation.sPCLKInput.ucPpll = ATOM_PPLL1;
+	else if (CLOCK_SOURCE_ID_PLL2 == bp_params->pll_id)
+		allocation.sPCLKInput.ucPpll = ATOM_PPLL2;
+	else
+		return BP_RESULT_BADINPUT;
+
+	allocation.sPCLKInput.usRefDiv =
+			cpu_to_le16((uint16_t)bp_params->reference_divider);
+	allocation.sPCLKInput.usFbDiv =
+			cpu_to_le16((uint16_t)bp_params->feedback_divider);
+	allocation.sPCLKInput.ucFracFbDiv =
+			(uint8_t)bp_params->fractional_feedback_divider;
+	allocation.sPCLKInput.ucPostDiv =
+			(uint8_t)bp_params->pixel_clock_post_divider;
+
+	/* We need to convert from KHz units into 10KHz units */
+	allocation.sPCLKInput.usPixelClock =
+			cpu_to_le16((uint16_t)(bp_params->target_pixel_clock / 10));
+
+	params = (PIXEL_CLOCK_PARAMETERS_V3 *)&allocation.sPCLKInput;
+	params->ucTransmitterId =
+		cmd_table_helper_encoder_id_to_atom(
+			display_graphics_object_id_get_encoder_id(
+				bp_params->encoder_object_id));
+	params->ucEncoderMode =
+		cmd_table_helper_encoder_mode_bp_to_atom(
+			bp_params->signal_type, false);
+
+	if (bp_params->flags.FORCE_PROGRAMMING_OF_PLL)
+		params->ucMiscInfo |= PIXEL_CLOCK_MISC_FORCE_PROG_PPLL;
+
+	if (bp_params->flags.USE_E_CLOCK_AS_SOURCE_FOR_D_CLOCK)
+		params->ucMiscInfo |= PIXEL_CLOCK_MISC_USE_ENGINE_FOR_DISPCLK;
+
+	if (CONTROLLER_ID_D1 != bp_params->controller_id)
+		params->ucMiscInfo |= PIXEL_CLOCK_MISC_CRTC_SEL_CRTC2;
+
+	if (EXEC_BIOS_CMD_TABLE(SetPixelClock, allocation))
+		result = BP_RESULT_OK;
+
+	return result;
+}
+
+#ifndef SET_PIXEL_CLOCK_PS_ALLOCATION_V5
+/* video bios did not define this: */
+typedef struct _SET_PIXEL_CLOCK_PS_ALLOCATION_V5 {
+	PIXEL_CLOCK_PARAMETERS_V5 sPCLKInput;
+	/* Caller doesn't need to init this portion */
+	ENABLE_SPREAD_SPECTRUM_ON_PPLL sReserved;
+} SET_PIXEL_CLOCK_PS_ALLOCATION_V5;
+#endif
+
+#ifndef SET_PIXEL_CLOCK_PS_ALLOCATION_V6
+/* video bios did not define this: */
+typedef struct _SET_PIXEL_CLOCK_PS_ALLOCATION_V6 {
+	PIXEL_CLOCK_PARAMETERS_V6 sPCLKInput;
+	/* Caller doesn't need to init this portion */
+	ENABLE_SPREAD_SPECTRUM_ON_PPLL sReserved;
+} SET_PIXEL_CLOCK_PS_ALLOCATION_V6;
+#endif
+
+static enum bp_result set_pixel_clock_v5(
+	struct bios_parser *bp,
+	struct bp_pixel_clock_parameters *bp_params)
+{
+	enum bp_result result = BP_RESULT_FAILURE;
+	SET_PIXEL_CLOCK_PS_ALLOCATION_V5 clk;
+	uint8_t controller_id;
+	uint32_t pll_id;
+
+	memset(&clk, 0, sizeof(clk));
+
+	if (bp->cmd_helper->clock_source_id_to_atom(bp_params->pll_id, &pll_id)
+	    && cmd_table_helper_controller_id_to_atom(
+		    bp_params->controller_id, &controller_id)) {
+		clk.sPCLKInput.ucCRTC = controller_id;
+		clk.sPCLKInput.ucPpll = (uint8_t)pll_id;
+		clk.sPCLKInput.ucRefDiv =
+				(uint8_t)(bp_params->reference_divider);
+		clk.sPCLKInput.usFbDiv =
+				cpu_to_le16((uint16_t)(bp_params->feedback_divider));
+		clk.sPCLKInput.ulFbDivDecFrac =
+				cpu_to_le32(bp_params->fractional_feedback_divider);
+		clk.sPCLKInput.ucPostDiv =
+				(uint8_t)(bp_params->pixel_clock_post_divider);
+		clk.sPCLKInput.ucTransmitterID =
+			cmd_table_helper_encoder_id_to_atom(
+						display_graphics_object_id_get_encoder_id(
+								bp_params->encoder_object_id));
+		clk.sPCLKInput.ucEncoderMode =
+			(uint8_t)cmd_table_helper_encoder_mode_bp_to_atom(
+						bp_params->signal_type, false);
+
+		/* We need to convert from KHz units into 10KHz units */
+		clk.sPCLKInput.usPixelClock =
+				cpu_to_le16((uint16_t)(bp_params->target_pixel_clock / 10));
+
+		if (bp_params->flags.FORCE_PROGRAMMING_OF_PLL)
+			clk.sPCLKInput.ucMiscInfo |=
+					PIXEL_CLOCK_MISC_FORCE_PROG_PPLL;
+
+		if (bp_params->flags.SET_EXTERNAL_REF_DIV_SRC)
+			clk.sPCLKInput.ucMiscInfo |=
+					PIXEL_CLOCK_MISC_REF_DIV_SRC;
+
+		/* clkV5.ucMiscInfo bit[3:2]= HDMI panel bit depth: =0: 24bpp
+		 * =1:30bpp, =2:32bpp
+		 * driver choose program it itself, i.e. here we program it
+		 * to 888 by default.
+		 */
+
+		if (EXEC_BIOS_CMD_TABLE(SetPixelClock, clk))
+			result = BP_RESULT_OK;
+	}
+
+	return result;
+}
+
+static enum bp_result set_pixel_clock_v6(
+	struct bios_parser *bp,
+	struct bp_pixel_clock_parameters *bp_params)
+{
+	enum bp_result result = BP_RESULT_FAILURE;
+	SET_PIXEL_CLOCK_PS_ALLOCATION_V6 clk;
+	uint8_t controller_id;
+	uint32_t pll_id;
+
+	memset(&clk, 0, sizeof(clk));
+
+	if (bp->cmd_helper->clock_source_id_to_atom(bp_params->pll_id, &pll_id)
+	    && cmd_table_helper_controller_id_to_atom(
+		    bp_params->controller_id, &controller_id)) {
+		/* Note: VBIOS still wants to use ucCRTC name which is now
+		 * 1 byte in ULONG
+		 *typedef struct _CRTC_PIXEL_CLOCK_FREQ
+		 *{
+		 * target the pixel clock to drive the CRTC timing.
+		 * ULONG ulPixelClock:24;
+		 * 0 means disable PPLL/DCPLL. Expanded to 24 bits comparing to
+		 * previous version.
+		 * ATOM_CRTC1~6, indicate the CRTC controller to
+		 * ULONG ucCRTC:8;
+		 * drive the pixel clock. not used for DCPLL case.
+		 *}CRTC_PIXEL_CLOCK_FREQ;
+		 *union
+		 *{
+		 * pixel clock and CRTC id frequency
+		 * CRTC_PIXEL_CLOCK_FREQ ulCrtcPclkFreq;
+		 * ULONG ulDispEngClkFreq; dispclk frequency
+		 *};
+		 */
+		clk.sPCLKInput.ulCrtcPclkFreq.ucCRTC = controller_id;
+		clk.sPCLKInput.ucPpll = (uint8_t) pll_id;
+		clk.sPCLKInput.ucRefDiv =
+				(uint8_t) bp_params->reference_divider;
+		clk.sPCLKInput.usFbDiv =
+				cpu_to_le16((uint16_t) bp_params->feedback_divider);
+		clk.sPCLKInput.ulFbDivDecFrac =
+				cpu_to_le32(bp_params->fractional_feedback_divider);
+		clk.sPCLKInput.ucPostDiv =
+				(uint8_t) bp_params->pixel_clock_post_divider;
+		clk.sPCLKInput.ucTransmitterID =
+				cmd_table_helper_encoder_id_to_atom(
+						display_graphics_object_id_get_encoder_id(
+								bp_params->encoder_object_id));
+		clk.sPCLKInput.ucEncoderMode =
+				(uint8_t) cmd_table_helper_encoder_mode_bp_to_atom(
+						bp_params->signal_type, false);
+
+		/* We need to convert from KHz units into 10KHz units */
+		clk.sPCLKInput.ulCrtcPclkFreq.ulPixelClock =
+				cpu_to_le32(bp_params->target_pixel_clock / 10);
+
+		if (bp_params->flags.FORCE_PROGRAMMING_OF_PLL) {
+			clk.sPCLKInput.ucMiscInfo |=
+					PIXEL_CLOCK_V6_MISC_FORCE_PROG_PPLL;
+		}
+
+		if (bp_params->flags.SET_EXTERNAL_REF_DIV_SRC) {
+			clk.sPCLKInput.ucMiscInfo |=
+					PIXEL_CLOCK_V6_MISC_REF_DIV_SRC;
+		}
+
+		/* clkV6.ucMiscInfo bit[3:2]= HDMI panel bit depth: =0:
+		 * 24bpp =1:30bpp, =2:32bpp
+		 * driver choose program it itself, i.e. here we pass required
+		 * target rate that includes deep color.
+		 */
+
+		if (EXEC_BIOS_CMD_TABLE(SetPixelClock, clk))
+			result = BP_RESULT_OK;
+	}
+
+	return result;
+}
+
+static enum bp_result set_pixel_clock_v7(
+	struct bios_parser *bp,
+	struct bp_pixel_clock_parameters *bp_params)
+{
+	enum bp_result result = BP_RESULT_FAILURE;
+#ifdef LATEST_ATOM_BIOS_SUPPORT
+	PIXEL_CLOCK_PARAMETERS_V7 clk;
+	uint8_t controller_id;
+	uint32_t pll_id;
+
+	memset(&clk, 0, sizeof(clk));
+
+	if (bp->cmd_helper->clock_source_id_to_atom(bp_params->pll_id, &pll_id)
+			&& bp->cmd_helper->controller_id_to_atom(bp_params->controller_id, &controller_id)) {
+		/* Note: VBIOS still wants to use ucCRTC name which is now
+		 * 1 byte in ULONG
+		 *typedef struct _CRTC_PIXEL_CLOCK_FREQ
+		 *{
+		 * target the pixel clock to drive the CRTC timing.
+		 * ULONG ulPixelClock:24;
+		 * 0 means disable PPLL/DCPLL. Expanded to 24 bits comparing to
+		 * previous version.
+		 * ATOM_CRTC1~6, indicate the CRTC controller to
+		 * ULONG ucCRTC:8;
+		 * drive the pixel clock. not used for DCPLL case.
+		 *}CRTC_PIXEL_CLOCK_FREQ;
+		 *union
+		 *{
+		 * pixel clock and CRTC id frequency
+		 * CRTC_PIXEL_CLOCK_FREQ ulCrtcPclkFreq;
+		 * ULONG ulDispEngClkFreq; dispclk frequency
+		 *};
+		 */
+		clk.ucCRTC = controller_id;
+		clk.ucPpll = (uint8_t) pll_id;
+		clk.ucTransmitterID = cmd_table_helper_encoder_id_to_atom(display_graphics_object_id_get_encoder_id(bp_params->encoder_object_id));
+		clk.ucEncoderMode = (uint8_t) cmd_table_helper_encoder_mode_bp_to_atom(bp_params->signal_type, false);
+
+		/* We need to convert from KHz units into 10KHz units */
+		clk.ulPixelClock = cpu_to_le32(bp_params->target_pixel_clock * 10);
+
+		clk.ucDeepColorRatio = (uint8_t) bp->cmd_helper->transmitter_color_depth_to_atom(bp_params->color_depth);
+
+		if (bp_params->flags.FORCE_PROGRAMMING_OF_PLL)
+			clk.ucMiscInfo |= PIXEL_CLOCK_V7_MISC_FORCE_PROG_PPLL;
+
+		if (bp_params->flags.SET_EXTERNAL_REF_DIV_SRC)
+			clk.ucMiscInfo |= PIXEL_CLOCK_V7_MISC_REF_DIV_SRC;
+
+		if (bp_params->flags.PROGRAM_PHY_PLL_ONLY)
+			clk.ucMiscInfo |= PIXEL_CLOCK_V7_MISC_PROG_PHYPLL;
+
+		if (bp_params->flags.SUPPORT_YUV_420)
+			clk.ucMiscInfo |= PIXEL_CLOCK_V7_MISC_YUV420_MODE;
+
+		if (bp_params->flags.SET_XTALIN_REF_SRC)
+			clk.ucMiscInfo |= PIXEL_CLOCK_V7_MISC_REF_DIV_SRC_XTALIN;
+
+		if (bp_params->flags.SET_GENLOCK_REF_DIV_SRC)
+			clk.ucMiscInfo |= PIXEL_CLOCK_V7_MISC_REF_DIV_SRC_GENLK;
+
+		if (bp_params->signal_type == SIGNAL_TYPE_DVI_DUAL_LINK)
+			clk.ucMiscInfo |= PIXEL_CLOCK_V7_MISC_DVI_DUALLINK_EN;
+
+		if (EXEC_BIOS_CMD_TABLE(SetPixelClock, clk))
+			result = BP_RESULT_OK;
+	}
+#endif
+	return result;
+}
+
+static void init_set_pixel_clock(struct bios_parser *bp)
+{
+	switch (BIOS_CMD_TABLE_PARA_REVISION(SetPixelClock)) {
+	case 3:
+		bp->cmd_tbl.set_pixel_clock = set_pixel_clock_v3;
+		break;
+	case 5:
+		bp->cmd_tbl.set_pixel_clock = set_pixel_clock_v5;
+		break;
+	case 6:
+		bp->cmd_tbl.set_pixel_clock = set_pixel_clock_v6;
+		break;
+	case 7:
+		bp->cmd_tbl.set_pixel_clock = set_pixel_clock_v7;
+		break;
+	default:
+		bp->cmd_tbl.set_pixel_clock = NULL;
+		break;
+	}
+}
+
+/*
  * DAC LOAD DETECTION
  */
 static enum signal_type dac_load_detection_v3(
@@ -361,6 +667,90 @@ static void init_blank_crtc(struct bios_parser *bp)
 		break;
 	}
 }
+
+/*
+ *                  DISPLAY PLL
+ */
+static enum bp_result program_clock_v5(
+	struct bios_parser *bp,
+	struct bp_pixel_clock_parameters *bp_params)
+{
+	enum bp_result result = BP_RESULT_FAILURE;
+
+	SET_PIXEL_CLOCK_PS_ALLOCATION_V5 params;
+	uint32_t atom_pll_id;
+
+	memset(&params, 0, sizeof(params));
+	if (!bp->cmd_helper->clock_source_id_to_atom(
+			bp_params->pll_id, &atom_pll_id)) {
+		return BP_RESULT_BADINPUT;
+	}
+
+	/* We need to convert from KHz units into 10KHz units */
+	params.sPCLKInput.ucPpll = (uint8_t) atom_pll_id;
+	params.sPCLKInput.usPixelClock =
+			cpu_to_le16((uint16_t) (bp_params->target_pixel_clock / 10));
+	params.sPCLKInput.ucCRTC = (uint8_t) ATOM_CRTC_INVALID;
+
+	if (bp_params->flags.SET_EXTERNAL_REF_DIV_SRC)
+		params.sPCLKInput.ucMiscInfo |= PIXEL_CLOCK_MISC_REF_DIV_SRC;
+
+	if (EXEC_BIOS_CMD_TABLE(SetPixelClock, params))
+		result = BP_RESULT_OK;
+
+	return result;
+}
+
+static enum bp_result program_clock_v6(
+	struct bios_parser *bp,
+	struct bp_pixel_clock_parameters *bp_params)
+{
+	enum bp_result result = BP_RESULT_FAILURE;
+
+	SET_PIXEL_CLOCK_PS_ALLOCATION_V6 params;
+	uint32_t atom_pll_id;
+
+	memset(&params, 0, sizeof(params));
+
+	if (!bp->cmd_helper->clock_source_id_to_atom(
+			bp_params->pll_id, &atom_pll_id)) {
+		return BP_RESULT_BADINPUT;
+	}
+
+	/* We need to convert from KHz units into 10KHz units */
+	params.sPCLKInput.ucPpll = (uint8_t)atom_pll_id;
+	params.sPCLKInput.ulDispEngClkFreq =
+			cpu_to_le32(bp_params->target_pixel_clock / 10);
+
+	if (bp_params->flags.SET_EXTERNAL_REF_DIV_SRC)
+		params.sPCLKInput.ucMiscInfo |= PIXEL_CLOCK_MISC_REF_DIV_SRC;
+
+	if (EXEC_BIOS_CMD_TABLE(SetPixelClock, params)) {
+		/* True display clock is returned by VBIOS if DFS bypass
+		 * is enabled. */
+		bp_params->dfs_bypass_display_clock =
+				(uint32_t)(le32_to_cpu(params.sPCLKInput.ulDispEngClkFreq) * 10);
+		result = BP_RESULT_OK;
+	}
+
+	return result;
+}
+
+static void init_program_clock(struct bios_parser *bp)
+{
+	switch (BIOS_CMD_TABLE_PARA_REVISION(SetPixelClock)) {
+	case 5:
+		bp->cmd_tbl.program_clock = program_clock_v5;
+		break;
+	case 6:
+		bp->cmd_tbl.program_clock = program_clock_v6;
+		break;
+	default:
+		bp->cmd_tbl.program_clock = NULL;
+		break;
+	}
+}
+
 
 /*
  * ENABLE DISPLAY POWER GATING
@@ -681,10 +1071,12 @@ static void init_enable_spread_spectrum_on_ppll(struct bios_parser *bp)
 
 void display_bios_parser_init_cmd_tbl(struct bios_parser *bp)
 {
+	init_set_pixel_clock(bp);
 	init_enable_crtc(bp);
 	init_dac_load_detection(bp);
 	init_blank_crtc(bp);
 	init_enable_disp_power_gating(bp);
+	init_program_clock(bp);
 	init_adjust_display_pll(bp);
 	init_enable_spread_spectrum_on_ppll(bp);
 }

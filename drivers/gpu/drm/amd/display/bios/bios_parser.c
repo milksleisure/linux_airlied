@@ -102,6 +102,17 @@ enum bp_result display_bios_adjust_pixel_clock(struct display_bios *dcb,
 	return bp->cmd_tbl.adjust_display_pll(bp, bp_params);
 }
 
+enum bp_result display_bios_set_pixel_clock(struct display_bios *dcb,
+					    struct bp_pixel_clock_parameters *bp_params)
+{
+	struct bios_parser *bp = dcb_to_bp(dcb);
+
+        if (!bp->cmd_tbl.set_pixel_clock)
+                return BP_RESULT_FAILURE;
+
+        return bp->cmd_tbl.set_pixel_clock(bp, bp_params);
+}
+
 enum bp_result display_bios_enable_spread_spectrum_on_ppll(struct display_bios *dcb,
 							   struct bp_spread_spectrum_parameters *bp_params,
 							   bool enable)
@@ -113,6 +124,17 @@ enum bp_result display_bios_enable_spread_spectrum_on_ppll(struct display_bios *
 
 	return bp->cmd_tbl.enable_spread_spectrum_on_ppll(
 			bp, bp_params, enable);
+}
+
+enum bp_result display_bios_program_display_engine_pll(struct display_bios *dcb,
+						       struct bp_pixel_clock_parameters *bp_params)
+{
+	struct bios_parser *bp = dcb_to_bp(dcb);
+
+	if (!bp->cmd_tbl.program_clock)
+		return BP_RESULT_FAILURE;
+
+	return bp->cmd_tbl.program_clock(bp, bp_params);
 }
 
 enum signal_type display_bios_dac_load_detect(struct display_bios *dcb,
