@@ -34,6 +34,7 @@ struct bios_parser {
 	uint8_t *bios;
 	uint32_t bios_size;
 
+	const struct command_table_helper *cmd_helper;
 	struct cmd_tbl cmd_tbl;
 };
 

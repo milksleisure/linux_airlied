@@ -44,6 +44,7 @@ struct display_bios *display_bios_parser_create(struct bp_init_data *init,
 	bp->bios_size = bp->bios[BIOS_IMAGE_SIZE_OFFSET] * BIOS_IMAGE_SIZE_UNIT;
 
 	display_bios_parser_init_cmd_tbl(bp);
+	display_bios_parser_init_cmd_tbl_helper(&bp->cmd_helper, version);
 	return (struct display_bios *)bp;
 }
 

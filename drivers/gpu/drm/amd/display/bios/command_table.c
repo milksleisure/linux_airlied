@@ -29,6 +29,9 @@
 #include "command_table.h"
 #include "cgs_linux.h"
 
+#include "dce80/command_table_helper_dce80.h"
+#include "dce110/command_table_helper_dce110.h"
+
 #define EXEC_BIOS_CMD_TABLE(command, params)\
 	(cgs_atom_exec_cmd_table(bp->cgs, \
 		GetIndexIntoMasterTable(COMMAND, command), \
@@ -684,4 +687,19 @@ void display_bios_parser_init_cmd_tbl(struct bios_parser *bp)
 	init_enable_disp_power_gating(bp);
 	init_adjust_display_pll(bp);
 	init_enable_spread_spectrum_on_ppll(bp);
+}
+
+void display_bios_parser_init_cmd_tbl_helper(const struct command_table_helper **h,
+					     enum dce_version dce)
+{
+	switch (dce) {
+	case DCE_VERSION_8_0:
+		*h = display_cmd_tbl_helper_dce80_get_table();
+		break;
+	case DCE_VERSION_10_0:
+	case DCE_VERSION_11_0:
+		*h = display_cmd_tbl_helper_dce110_get_table();
+	default:
+		return;
+	}
 }

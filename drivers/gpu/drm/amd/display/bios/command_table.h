@@ -26,6 +26,10 @@
 #ifndef __DISPLAY_COMMAND_TABLE_H__
 #define __DISPLAY_COMMAND_TABLE_H__
 
+#include "atom.h"
+#include "display_types.h"
+#include "bios_parser_interface.h"
+
 struct bios_parser;
 
 struct cmd_tbl {
@@ -51,5 +55,13 @@ struct cmd_tbl {
 };
 
 void display_bios_parser_init_cmd_tbl(struct bios_parser *bp);
+
+struct command_table_helper {
+	bool (*clock_source_id_to_atom)(enum clock_source_id id,
+					uint32_t *atom_pll_id);
+};
+
+void display_bios_parser_init_cmd_tbl_helper(const struct command_table_helper **h,
+					     enum dce_version dce);
 
 #endif

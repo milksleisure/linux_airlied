@@ -98,7 +98,9 @@ amdgpu-y += \
 
 amdgpu-y += \
 	../display/bios/bios_parser.o \
-	../display/bios/command_table.o
+	../display/bios/command_table.o \
+	../display/bios/dce80/command_table_helper_dce80.o \
+	../display/bios/dce110/command_table_helper_dce110.o
 
 # ACP componet
 ifneq ($(CONFIG_DRM_AMD_ACP),)
