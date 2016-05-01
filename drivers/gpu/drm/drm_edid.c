@@ -4168,8 +4168,8 @@ static int drm_parse_display_id(struct drm_connector *connector,
 
 	base = (struct displayid_hdr *)&displayid[idx];
 
-	DRM_DEBUG_KMS("base revision 0x%x, length %d, %d %d\n",
-		      base->rev, base->bytes, base->prod_id, base->ext_count);
+	DRM_DEBUG_KMS("base revision v%d.%d, edid length %d, bytes %d, prod_id %d ext_count %d\n",
+		      base->ver, base->rev, length, base->bytes, base->prod_id, base->ext_count);
 
 	if (base->bytes + 5 > length - idx)
 		return -EINVAL;
@@ -4183,7 +4183,7 @@ static int drm_parse_display_id(struct drm_connector *connector,
 	}
 
 	block = (struct displayid_block *)&displayid[idx + 4];
-	DRM_DEBUG_KMS("block id %d, rev %d, len %d\n",
+	DRM_DEBUG_KMS("block id 0x%x, rev %d, len %d\n",
 		      block->tag, block->rev, block->num_bytes);
 
 	switch (block->tag) {

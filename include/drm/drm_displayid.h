@@ -52,7 +52,8 @@
 #define PRODUCT_TYPE_DIRECT_DRIVE 6
 
 struct displayid_hdr {
-	u8 rev;
+	u8 rev:4;
+	u8 ver:4;
 	u8 bytes;
 	u8 prod_id;
 	u8 ext_count;
@@ -60,7 +61,8 @@ struct displayid_hdr {
 
 struct displayid_block {
 	u8 tag;
-	u8 rev;
+	u8 rev:3;
+	u8 reserved:5;
 	u8 num_bytes;
 } __packed;
 
