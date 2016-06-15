@@ -1184,6 +1184,7 @@ struct drm_connector {
 	int connector_id;
 	int connector_type;
 	int connector_type_id;
+	bool registered;
 	bool interlace_allowed;
 	bool doublescan_allowed;
 	bool stereo_allowed;

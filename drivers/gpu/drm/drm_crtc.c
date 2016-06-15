@@ -868,9 +868,6 @@ static void drm_connector_free(struct kref *kref)
 {
 	struct drm_connector *connector =
 		container_of(kref, struct drm_connector, base.refcount);
-	struct drm_device *dev = connector->dev;
-
-	drm_mode_object_unregister(dev, &connector->base);
 	connector->funcs->destroy(connector);
 }
 
@@ -942,6 +939,7 @@ int drm_connector_init(struct drm_device *dev,
 	 * index too much. */
 	list_add_tail(&connector->head, &config->connector_list);
 	config->num_connector++;
+	connector->registered = true;
 
 	if (connector_type != DRM_MODE_CONNECTOR_VIRTUAL)
 		drm_object_attach_property(&connector->base,
@@ -1002,11 +1000,8 @@ void drm_connector_cleanup(struct drm_connector *connector)
 		   connector->connector_id);
 
 	kfree(connector->display_info.bus_formats);
-	drm_mode_object_unregister(dev, &connector->base);
 	kfree(connector->name);
 	connector->name = NULL;
-	list_del(&connector->head);
-	dev->mode_config.num_connector--;
 
 	WARN_ON(connector->state && !connector->funcs->atomic_destroy_state);
 	if (connector->state && connector->funcs->atomic_destroy_state)
@@ -1054,8 +1049,21 @@ EXPORT_SYMBOL(drm_connector_register);
  */
 void drm_connector_unregister(struct drm_connector *connector)
 {
+	struct drm_device *dev = connector->dev;
+
+	/* really want to test this is locked here:
+	   a) single teardown doesn't lock.
+	   b) unregister all has some sysfs interaction issues
+	*/
+	/* WARN_ON(!mutex_is_locked(&dev->mode_config.mutex));*/
 	drm_sysfs_connector_remove(connector);
 	drm_debugfs_connector_remove(connector);
+	drm_mode_object_unregister(dev, &connector->base);
+	if (connector->registered) {
+		list_del(&connector->head);
+		dev->mode_config.num_connector--;
+		connector->registered = false;
+	}
 }
 EXPORT_SYMBOL(drm_connector_unregister);
 
@@ -5906,6 +5914,7 @@ void drm_mode_config_cleanup(struct drm_device *dev)
 
 	list_for_each_entry_safe(connector, ot,
 				 &dev->mode_config.connector_list, head) {
+		drm_connector_unregister(connector);
 		connector->funcs->destroy(connector);
 	}
 
