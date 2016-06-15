@@ -1055,7 +1055,7 @@ void drm_connector_unregister(struct drm_connector *connector)
 	   a) single teardown doesn't lock.
 	   b) unregister all has some sysfs interaction issues
 	*/
-	/* WARN_ON(!mutex_is_locked(&dev->mode_config.mutex));*/
+	WARN_ON(!mutex_is_locked(&dev->mode_config.mutex));
 	drm_sysfs_connector_remove(connector);
 	drm_debugfs_connector_remove(connector);
 	drm_mode_object_unregister(dev, &connector->base);
